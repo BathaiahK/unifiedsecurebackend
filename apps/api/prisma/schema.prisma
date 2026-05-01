@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Scan {
+  id          String    @id @map("_id")
+  tool        String
+  asset       String
+  status      String    @default("queued")
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  findings    Finding[]
+
+  @@index([tool, asset])
+  @@index([status])
+}
+
+model Finding {
+  id               String   @id @map("_id")
+  tool             String
+  severity         String
+  cvss             Float?
+  cve              String?
+  cwe              String?
+  asset            String
+  status           String   @default("open")
+  fixVersion       String?
+  firstSeen        DateTime
+  lastSeen         DateTime
+  remediationSteps String[]
+  evidence         Json
+  scanId           String
+
+  scan Scan @relation(fields: [scanId], references: [id])
+
+  @@index([cve])
+  @@index([asset])
+  @@index([severity])
+  @@index([tool])
+  @@index([status])
+  @@index([scanId])
+}
