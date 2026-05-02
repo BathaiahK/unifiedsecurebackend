@@ -88,33 +88,36 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
         let stats: { label: string; value: string; highlight?: 'red' | 'orange' | 'green' }[] = [];
         let score: string | undefined;
 
+        type Stat = { label: string; value: string; highlight?: 'red' | 'orange' | 'green' };
+        const stat = (label: string, value: string, highlight?: 'red' | 'orange' | 'green'): Stat =>
+          highlight ? { label, value, highlight } : { label, value };
+
         if (tool === 'blackduck') {
           stats = [
-            { label: 'CVEs', value: critCount > 0 ? `${critCount} crit` : `${totalCount}`, highlight: critCount > 0 ? 'red' : undefined },
-            { label: 'Pkgs', value: String(totalCount + 130) },
+            stat('CVEs', critCount > 0 ? `${critCount} crit` : `${totalCount}`, critCount > 0 ? 'red' : undefined),
+            stat('Pkgs', String(totalCount + 130)),
           ];
         } else if (tool === 'sonatype') {
           stats = [
-            { label: 'Policy', value: highCount > 0 ? `${highCount} warn` : 'pass', highlight: highCount > 0 ? 'orange' : 'green' },
-            { label: 'Cmps', value: String(totalCount + 80) },
+            stat('Policy', highCount > 0 ? `${highCount} warn` : 'pass', highCount > 0 ? 'orange' : 'green'),
+            stat('Cmps', String(totalCount + 80)),
           ];
         } else if (tool === 'sysdig') {
           stats = [
-            { label: 'OS CVEs', value: String(totalCount), highlight: totalCount > 0 ? 'orange' : undefined },
+            stat('OS CVEs', String(totalCount), totalCount > 0 ? 'orange' : undefined),
           ];
         } else if (tool === 'dast') {
           const xssFindings = findings.filter((f) => f.cwe === 'CWE-79').length;
           stats = [
-            { label: 'Alerts', value: xssFindings > 0 ? `XSS×${xssFindings}` : String(totalCount), highlight: xssFindings > 0 ? 'red' : undefined },
+            stat('Alerts', xssFindings > 0 ? `XSS×${xssFindings}` : String(totalCount), xssFindings > 0 ? 'red' : undefined),
           ];
         } else if (tool === '42crunch') {
-          const avgCvss = findings.reduce((s, f) => s + (f.cvss ?? 0), 0) / (findings.length || 1);
           const apiScore = Math.max(0, Math.min(100, Math.round(100 - totalCount * 6)));
           score = `${apiScore}/100`;
           stats = [
-            { label: 'Endpoints', value: String(20 + totalCount) },
-            { label: 'Issues', value: String(totalCount), highlight: totalCount > 0 ? 'orange' : undefined },
-            { label: 'OWASP API', value: totalCount > 0 ? 'A1, A2, A5' : 'None', highlight: totalCount > 0 ? 'orange' : undefined },
+            stat('Endpoints', String(20 + totalCount)),
+            stat('Issues', String(totalCount), totalCount > 0 ? 'orange' : undefined),
+            stat('OWASP API', totalCount > 0 ? 'A1, A2, A5' : 'None', totalCount > 0 ? 'orange' : undefined),
           ];
         }
 

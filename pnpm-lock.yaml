@@ -32,6 +32,9 @@ importers:
       '@usp/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@usp/remediation':
+        specifier: workspace:*
+        version: link:../../packages/remediation
       '@usp/schema':
         specifier: workspace:*
         version: link:../../packages/schema

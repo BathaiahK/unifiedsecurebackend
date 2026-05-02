@@ -27,7 +27,6 @@ export function normalizeBlackDuckComponent(
 ): UnifiedFinding {
   const vuln = component.vulnerabilityWithRemediation;
   const now = new Date().toISOString();
-
   const cveName = vuln.vulnerabilityName.startsWith('CVE-') ? vuln.vulnerabilityName : null;
 
   return {
@@ -37,12 +36,16 @@ export function normalizeBlackDuckComponent(
     cvss: vuln.baseScore,
     cve: cveName,
     cwe: vuln.cweId ?? null,
+    title: cveName
+      ? `${cveName} in ${component.componentName}@${component.componentVersionName}`
+      : `${vuln.vulnerabilityName} in ${component.componentName}@${component.componentVersionName}`,
     asset,
     status: statusMap[vuln.remediationStatus?.toUpperCase()] ?? 'open',
     fixVersion: null,
     firstSeen: vuln.remediationCreatedAt ?? now,
     lastSeen: now,
     remediationSteps: buildRemediationSteps(component),
+    references: buildReferences(component),
     evidence: {
       componentName: component.componentName,
       componentVersion: component.componentVersionName,
@@ -58,14 +61,33 @@ export function normalizeBlackDuckComponent(
 function buildRemediationSteps(component: BlackDuckVulnerableComponent): string[] {
   const steps: string[] = [];
   const { componentName, componentVersionName } = component;
+  const vuln = component.vulnerabilityWithRemediation;
 
-  steps.push(`Investigate ${componentName}@${componentVersionName} for a patched release`);
-  steps.push(`Check the BlackDuck advisory for ${component.vulnerabilityWithRemediation.vulnerabilityName}`);
+  steps.push(`Review ${componentName}@${componentVersionName} and upgrade to a non-vulnerable version`);
 
-  const targetDate = component.vulnerabilityWithRemediation.targetRemediationDate;
+  if (vuln.vulnerabilityName.startsWith('CVE-')) {
+    steps.push(`Run: npm audit fix  # or equivalent for your package manager`);
+    steps.push(`Verify fix: npm audit | grep ${vuln.vulnerabilityName}`);
+  }
+
+  const targetDate = vuln.targetRemediationDate;
   if (targetDate) {
-    steps.push(`Remediation target date: ${new Date(targetDate).toLocaleDateString('en-GB')}`);
+    steps.push(`Remediation target: ${new Date(targetDate).toLocaleDateString('en-GB')}`);
   }
 
   return steps;
+}
+
+function buildReferences(component: BlackDuckVulnerableComponent): { label: string; url: string }[] {
+  const refs: { label: string; url: string }[] = [];
+  const vuln = component.vulnerabilityWithRemediation;
+
+  if (vuln.vulnerabilityName.startsWith('CVE-')) {
+    refs.push({ label: 'NVD', url: `https://nvd.nist.gov/vuln/detail/${vuln.vulnerabilityName}` });
+  }
+  if (component._meta.href) {
+    refs.push({ label: 'BlackDuck Advisory', url: component._meta.href });
+  }
+
+  return refs;
 }

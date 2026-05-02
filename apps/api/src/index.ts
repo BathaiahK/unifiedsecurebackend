@@ -14,7 +14,15 @@ const scannerConfigs = getScannerConfigs();
 
 const app = Fastify({ logger: { level: apiConfig.logLevel } });
 
-await app.register(cors, { origin: apiConfig.corsOrigin });
+await app.register(cors, {
+  origin: apiConfig.nodeEnv === 'production'
+    ? apiConfig.corsOrigin
+    : (origin, cb) => {
+        // Allow all localhost origins in development
+        if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
+        cb(new Error('CORS: origin not allowed'), false);
+      },
+});
 
 app.get('/health', async () => ({
   status: 'ok',

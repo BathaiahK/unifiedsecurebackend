@@ -1,5 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
+import type { Prisma } from '@prisma/client';
 import { ScanConfigSchema } from '@usp/schema';
+import type { RemediationEngineConfig } from '@usp/remediation';
+import { enrichFindings } from '@usp/remediation';
+import { getRemediationConfig } from '@usp/config';
 import { prisma } from '../db.js';
 import { getAdapter } from '../adapter-registry.js';
 
@@ -18,15 +23,63 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const scan = await prisma.scan.create({
-      data: { tool: config.data.tool, asset: config.data.asset, status: 'queued' },
+      data: { id: randomUUID(), tool: config.data.tool, asset: config.data.asset, status: 'queued' },
     });
 
-    // Fire-and-forget: run the scan pipeline in the background
-    runScanPipeline(scan.id, config.data, adapter).catch((err) => {
-      console.error(`Scan pipeline failed for ${scan.id}:`, err);
+    const pipelineConfig = {
+      tool: config.data.tool,
+      asset: config.data.asset,
+      ...(config.data.options !== undefined ? { options: config.data.options } : {}),
+    };
+    runScanPipeline(scan.id, pipelineConfig, adapter).catch((err) => {
+      app.log.error({ scanId: scan.id, err }, 'Scan pipeline failed');
     });
 
     return reply.status(202).send({ scanId: scan.id, status: 'queued' });
+  });
+
+  // SSE: stream live scan status updates until complete/failed
+  app.get<{ Params: { id: string } }>('/api/scans/:id/events', (req, reply) => {
+    reply.hijack();
+    const res = reply.raw;
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    let closed = false;
+    req.raw.on('close', () => { closed = true; });
+
+    const send = (data: object) => {
+      if (!closed) res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    const poll = async (): Promise<void> => {
+      if (closed) return;
+      try {
+        const scan = await prisma.scan.findUnique({
+          where: { id: req.params.id },
+          include: { _count: { select: { findings: true } } },
+        });
+        if (!scan) {
+          send({ error: 'Scan not found' });
+          res.end();
+          return;
+        }
+        send({ ...scan, findingCount: scan._count.findings });
+        if (scan.status === 'complete' || scan.status === 'failed') {
+          res.end();
+          return;
+        }
+        if (!closed) setTimeout(() => { poll().catch(() => res.end()); }, 2000);
+      } catch {
+        res.end();
+      }
+    };
+
+    poll().catch(() => res.end());
   });
 
   app.get<{ Params: { id: string } }>('/api/scans/:id', async (req, reply) => {
@@ -86,7 +139,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
-  app.get('/api/scans', async (req) => {
+  app.get('/api/scans', async (_req) => {
     const scans = await prisma.scan.findMany({
       orderBy: { startedAt: 'desc' },
       take: 50,
@@ -107,9 +160,10 @@ async function runScanPipeline(
     const { scanId: externalScanId } = await adapter.trigger({
       tool: config.tool as import('@usp/schema').Tool,
       asset: config.asset,
-      options: config.options,
+      ...(config.options !== undefined ? { options: config.options } : {}),
     });
 
+    // Poll until complete or failed
     let pollResult = await adapter.poll(externalScanId);
     while (pollResult.status === 'running' || pollResult.status === 'queued') {
       await new Promise((r) => setTimeout(r, 5_000));
@@ -120,13 +174,60 @@ async function runScanPipeline(
       throw new Error('Adapter reported scan failure');
     }
 
-    const findings = await adapter.normalize(externalScanId);
-    const withScanId = findings.map((f) => ({ ...f, scanId }));
-    await adapter.store(withScanId);
+    // Normalize raw findings from scanner
+    const rawFindings = await adapter.normalize(externalScanId);
+    const withScanId = rawFindings.map((f) => ({ ...f, scanId }));
+
+    // Enrich with NVD CVSS scores + OSV fix versions / advisory URLs
+    const remConfig = getRemediationConfig();
+    const enrichConfig: RemediationEngineConfig = {
+      nvdApiUrl:   remConfig.nvdApiUrl,
+      osvApiUrl:   remConfig.osvApiUrl,
+      concurrency: remConfig.concurrency,
+    };
+    if (remConfig.nvdApiKey) enrichConfig.nvdApiKey = remConfig.nvdApiKey;
+    const enriched = await enrichFindings(withScanId, enrichConfig);
+
+    // Persist findings in MongoDB
+    if (enriched.length > 0) {
+      await prisma.finding.createMany({
+        data: enriched.map((f) => ({
+          id:               f.id,
+          tool:             f.tool,
+          severity:         f.severity,
+          cvss:             f.cvss,
+          cve:              f.cve,
+          cwe:              f.cwe,
+          title:            f.title,
+          asset:            f.asset,
+          status:           f.status,
+          fixVersion:       f.fixVersion,
+          firstSeen:        new Date(f.firstSeen),
+          lastSeen:         new Date(f.lastSeen),
+          remediationSteps: f.remediationSteps,
+          references:       f.references as Prisma.InputJsonValue,
+          evidence:         f.evidence as Prisma.InputJsonValue,
+          scanId:           f.scanId,
+        })),
+      });
+    }
+
+    // Compute severity counts for the scan record
+    const critical = enriched.filter((f) => f.severity === 'critical').length;
+    const high     = enriched.filter((f) => f.severity === 'high').length;
+    const medium   = enriched.filter((f) => f.severity === 'medium').length;
+    const passedGate = critical === 0 && high === 0;
 
     await prisma.scan.update({
       where: { id: scanId },
-      data: { status: 'complete', completedAt: new Date() },
+      data: {
+        status: 'complete',
+        completedAt: new Date(),
+        critical,
+        high,
+        medium,
+        passedGate,
+      },
     });
   } catch (err) {
     await prisma.scan.update({ where: { id: scanId }, data: { status: 'failed' } });
