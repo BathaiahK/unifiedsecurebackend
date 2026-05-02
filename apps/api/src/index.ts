@@ -36,20 +36,18 @@ await app.register(statsRoutes);
 await app.register(assetsRoutes);
 await app.register(reportsRoutes);
 
-if (scannerConfigs.blackduck) {
-  registerAdapter(new BlackDuckAdapter(scannerConfigs.blackduck));
-  app.log.info('BlackDuck adapter registered');
+// BlackDuck: use real client when credentials are present, simulator otherwise
+const bdAdapter = new BlackDuckAdapter(scannerConfigs.blackduck ?? undefined);
+registerAdapter(bdAdapter);
+if (bdAdapter.isSimulated) {
+  app.log.warn('BlackDuck running in SIMULATION mode — add BLACKDUCK_URL + BLACKDUCK_API_TOKEN to .env for live scanning');
+} else {
+  app.log.info('BlackDuck adapter registered (live)');
 }
+
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
 if (scannerConfigs.sonatype) app.log.info('Sonatype adapter registered (stub)');
-
-const configured = getConfiguredScanners(scannerConfigs);
-if (configured.length === 0) {
-  app.log.warn('No scanner credentials configured — add them to .env to enable scan triggering');
-} else {
-  app.log.info({ adapters: configured }, 'Scanner adapters ready');
-}
 
 try {
   await app.listen({ port: apiConfig.port, host: apiConfig.host });
