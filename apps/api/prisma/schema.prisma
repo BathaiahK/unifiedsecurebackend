@@ -14,10 +14,15 @@ model Scan {
   status      String    @default("queued")
   startedAt   DateTime  @default(now())
   completedAt DateTime?
+  critical    Int?
+  high        Int?
+  medium      Int?
+  passedGate  Boolean?
   findings    Finding[]
 
   @@index([tool, asset])
   @@index([status])
+  @@index([startedAt])
 }
 
 model Finding {
@@ -27,12 +32,14 @@ model Finding {
   cvss             Float?
   cve              String?
   cwe              String?
+  title            String
   asset            String
   status           String   @default("open")
   fixVersion       String?
   firstSeen        DateTime
   lastSeen         DateTime
   remediationSteps String[]
+  references       Json     @default("[]")
   evidence         Json
   scanId           String
 
@@ -44,4 +51,15 @@ model Finding {
   @@index([tool])
   @@index([status])
   @@index([scanId])
+  @@index([firstSeen])
+}
+
+model ReportDownload {
+  id        String   @id @map("_id")
+  name      String
+  format    String
+  size      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

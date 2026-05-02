@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:seed": "tsx --env-file=.env src/seed.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

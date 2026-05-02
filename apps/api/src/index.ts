@@ -4,15 +4,15 @@ import { getApiConfig, getScannerConfigs, getConfiguredScanners } from '@usp/con
 import { findingsRoutes } from './routes/findings.js';
 import { scansRoutes } from './routes/scans.js';
 import { statsRoutes } from './routes/stats.js';
+import { assetsRoutes } from './routes/assets.js';
+import { reportsRoutes } from './routes/reports.js';
 import { registerAdapter } from './adapter-registry.js';
 import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 
 const apiConfig = getApiConfig();
 const scannerConfigs = getScannerConfigs();
 
-const app = Fastify({
-  logger: { level: apiConfig.logLevel },
-});
+const app = Fastify({ logger: { level: apiConfig.logLevel } });
 
 await app.register(cors, { origin: apiConfig.corsOrigin });
 
@@ -25,27 +25,16 @@ app.get('/health', async () => ({
 await app.register(findingsRoutes);
 await app.register(scansRoutes);
 await app.register(statsRoutes);
+await app.register(assetsRoutes);
+await app.register(reportsRoutes);
 
-// Register adapters for every scanner that has credentials in .env
 if (scannerConfigs.blackduck) {
   registerAdapter(new BlackDuckAdapter(scannerConfigs.blackduck));
   app.log.info('BlackDuck adapter registered');
 }
-
-if (scannerConfigs.sysdig) {
-  // registerAdapter(new SysdigAdapter(scannerConfigs.sysdig));
-  app.log.info('Sysdig adapter registered (stub)');
-}
-
-if (scannerConfigs.crunch42) {
-  // registerAdapter(new Crunch42Adapter(scannerConfigs.crunch42));
-  app.log.info('42Crunch adapter registered (stub)');
-}
-
-if (scannerConfigs.sonatype) {
-  // registerAdapter(new SonatypeAdapter(scannerConfigs.sonatype));
-  app.log.info('Sonatype adapter registered (stub)');
-}
+if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
+if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
+if (scannerConfigs.sonatype) app.log.info('Sonatype adapter registered (stub)');
 
 const configured = getConfiguredScanners(scannerConfigs);
 if (configured.length === 0) {
