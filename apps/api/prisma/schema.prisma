@@ -18,6 +18,7 @@ model Scan {
   high        Int?
   medium      Int?
   passedGate  Boolean?
+  meta        Json      @default("{}")
   findings    Finding[]
 
   @@index([tool, asset])
@@ -60,6 +61,17 @@ model ReportDownload {
   format    String
   size      String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Project {
+  id            String   @id @map("_id")
+  name          String   @unique
+  repoUrl       String
+  defaultBranch String   @default("main")
+  description   String?
+  createdAt     DateTime @default(now())
 
   @@index([createdAt])
 }

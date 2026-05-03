@@ -1,3 +1,7 @@
+export type ScanMode = 'package-manager' | 'standard' | 'full';
+export type DetectionType = 'package-manager' | 'signature' | 'snippet' | 'binary';
+export type AdvisorySource = 'bdsa' | 'nvd';
+
 export interface BlackDuckConfig {
   url: string;
   apiToken: string;
@@ -49,6 +53,12 @@ export class BlackDuckClient {
     );
   }
 
+  async getComponentBOM(projectId: string, versionId: string): Promise<BlackDuckBOMPage> {
+    return this.request<BlackDuckBOMPage>(
+      `/api/projects/${projectId}/versions/${versionId}/components?limit=500`,
+    );
+  }
+
   async getProjectVersion(projectName: string): Promise<{ id: string; versionId: string } | null> {
     const projects = await this.request<{ items: Array<{ name: string; _meta: { href: string } }> }>(
       `/api/projects?q=name:${encodeURIComponent(projectName)}&limit=1`,
@@ -67,6 +77,8 @@ export class BlackDuckClient {
     return { id: projectId, versionId };
   }
 }
+
+// ── Vulnerability types ───────────────────────────────────────────────────────
 
 export interface BlackDuckVulnerabilityPage {
   totalCount: number;
@@ -87,4 +99,37 @@ export interface BlackDuckVulnerableComponent {
     remediationCreatedAt: string | null;
   };
   _meta: { href: string };
+  // Enriched fields added by simulator / real API extension
+  detectionType?: DetectionType;
+  advisorySource?: AdvisorySource;
+  bdsaId?: string;
+}
+
+// ── BOM (component inventory) types ──────────────────────────────────────────
+
+export interface BlackDuckBOMPage {
+  totalCount: number;
+  items: BlackDuckBOMComponent[];
+}
+
+export interface BlackDuckBOMComponent {
+  componentName: string;
+  componentVersionName: string;
+  licenses: Array<{
+    spdxId: string;
+    licenseDisplay: string;
+    licenseType: 'OPEN_SOURCE' | 'PROPRIETARY' | 'UNKNOWN';
+  }>;
+  usages: string[];
+  reviewStatus: 'REVIEWED' | 'UNREVIEWED' | 'DYNAMIC_IN_USE';
+}
+
+export interface BOMSummary {
+  scanMode: ScanMode;
+  totalComponents: number;
+  vulnerableComponents: number;
+  bdsaCount: number;
+  licenseRisk: { high: number; medium: number; low: number };
+  licenseViolations: Array<{ component: string; version: string; license: string; risk: 'HIGH' | 'MEDIUM' }>;
+  topComponents: Array<{ name: string; version: string; license: string; licenseRisk: 'HIGH' | 'MEDIUM' | 'LOW' }>;
 }

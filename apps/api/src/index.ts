@@ -6,6 +6,7 @@ import { scansRoutes } from './routes/scans.js';
 import { statsRoutes } from './routes/stats.js';
 import { assetsRoutes } from './routes/assets.js';
 import { reportsRoutes } from './routes/reports.js';
+import { projectsRoutes } from './routes/projects.js';
 import { registerAdapter } from './adapter-registry.js';
 import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 
@@ -35,6 +36,7 @@ await app.register(scansRoutes);
 await app.register(statsRoutes);
 await app.register(assetsRoutes);
 await app.register(reportsRoutes);
+await app.register(projectsRoutes);
 
 // BlackDuck: use real client when credentials are present, simulator otherwise
 const bdAdapter = new BlackDuckAdapter(scannerConfigs.blackduck ?? undefined);

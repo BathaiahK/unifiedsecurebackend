@@ -42,11 +42,14 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string } }>('/api/scans/:id/events', (req, reply) => {
     reply.hijack();
     const res = reply.raw;
+    const origin = req.headers.origin ?? '*';
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': 'true',
     });
 
     let closed = false;
@@ -147,6 +150,22 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     });
     return scans.map((s) => ({ ...s, findingCount: s._count.findings }));
   });
+
+  // Findings scoped to a single scan — the per-scan vulnerability view
+  app.get<{ Params: { id: string } }>('/api/scans/:id/findings', async (req, reply) => {
+    const scan = await prisma.scan.findUnique({
+      where: { id: req.params.id },
+      include: { _count: { select: { findings: true } } },
+    });
+    if (!scan) return reply.status(404).send({ error: 'Scan not found' });
+
+    const findings = await prisma.finding.findMany({
+      where: { scanId: req.params.id },
+      orderBy: [{ severity: 'asc' }, { cvss: 'desc' }, { lastSeen: 'desc' }],
+    });
+
+    return reply.send({ scan: { ...scan, findingCount: scan._count.findings }, findings });
+  });
 };
 
 async function runScanPipeline(
@@ -218,6 +237,14 @@ async function runScanPipeline(
     const medium   = enriched.filter((f) => f.severity === 'medium').length;
     const passedGate = critical === 0 && high === 0;
 
+    // Duck-type call getBOMSummary if the adapter exposes it (BlackDuck-specific)
+    let meta: Record<string, unknown> = {};
+    const adapterAny = adapter as Record<string, unknown>;
+    if (typeof adapterAny['getBOMSummary'] === 'function') {
+      const bom = await (adapterAny['getBOMSummary'] as (id: string) => Promise<unknown>)(externalScanId);
+      if (bom) meta = { bom };
+    }
+
     await prisma.scan.update({
       where: { id: scanId },
       data: {
@@ -227,6 +254,7 @@ async function runScanPipeline(
         high,
         medium,
         passedGate,
+        meta: meta as import('@prisma/client').Prisma.InputJsonValue,
       },
     });
   } catch (err) {

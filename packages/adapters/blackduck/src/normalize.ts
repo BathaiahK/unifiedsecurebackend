@@ -53,6 +53,10 @@ export function normalizeBlackDuckComponent(
       description: vuln.description,
       remediationStatus: vuln.remediationStatus,
       href: component._meta.href,
+      // BlackDuck-specific enrichment
+      detectionType: component.detectionType ?? 'package-manager',
+      advisorySource: component.advisorySource ?? 'nvd',
+      bdsaId: component.bdsaId ?? null,
     },
     scanId,
   };
@@ -85,7 +89,9 @@ function buildReferences(component: BlackDuckVulnerableComponent): { label: stri
   if (vuln.vulnerabilityName.startsWith('CVE-')) {
     refs.push({ label: 'NVD', url: `https://nvd.nist.gov/vuln/detail/${vuln.vulnerabilityName}` });
   }
-  if (component._meta.href) {
+  if (component.bdsaId) {
+    refs.push({ label: 'BDSA Advisory', url: component._meta.href });
+  } else if (component._meta.href) {
     refs.push({ label: 'BlackDuck Advisory', url: component._meta.href });
   }
 
