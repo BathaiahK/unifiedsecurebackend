@@ -71,6 +71,7 @@ model Project {
   repoUrl       String
   defaultBranch String   @default("main")
   description   String?
+  gitToken      String?
   createdAt     DateTime @default(now())
 
   @@index([createdAt])

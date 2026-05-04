@@ -18,7 +18,7 @@ const Crunch42Schema = z.object({
 });
 
 const SonatypeSchema = z.object({
-  url:      z.string().url('SONATYPE_URL must be a valid URL'),
+  url:      z.string().url().optional(),   // Nexus IQ only — not needed for OSS Index
   username: z.string().min(1, 'SONATYPE_USERNAME is required'),
   password: z.string().min(1, 'SONATYPE_PASSWORD is required'),
 });
@@ -67,7 +67,7 @@ export function getScannerConfigs(): ScannerConfigs {
     }),
 
     sonatype: tryParse(SonatypeSchema, {
-      url:      process.env['SONATYPE_URL'],
+      url:      process.env['SONATYPE_URL'] || undefined,  // empty string → undefined
       username: process.env['SONATYPE_USERNAME'],
       password: process.env['SONATYPE_PASSWORD'],
     }),

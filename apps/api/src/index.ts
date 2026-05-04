@@ -9,6 +9,7 @@ import { reportsRoutes } from './routes/reports.js';
 import { projectsRoutes } from './routes/projects.js';
 import { registerAdapter } from './adapter-registry.js';
 import { BlackDuckAdapter } from '@usp/adapter-blackduck';
+import { SonatypeAdapter } from '@usp/adapter-sonatype';
 
 const apiConfig = getApiConfig();
 const scannerConfigs = getScannerConfigs();
@@ -47,9 +48,21 @@ if (bdAdapter.isSimulated) {
   app.log.info('BlackDuck adapter registered (live)');
 }
 
+// Sonatype: simulator when credentials absent, real OSS Index client when present
+const snAdapter = new SonatypeAdapter(
+  scannerConfigs.sonatype
+    ? { username: scannerConfigs.sonatype.username, token: scannerConfigs.sonatype.password }
+    : undefined,
+);
+registerAdapter(snAdapter);
+if (snAdapter.isSimulated) {
+  app.log.warn('Sonatype running in SIMULATION mode — add SONATYPE_USERNAME + SONATYPE_TOKEN to .env for live OSS Index scanning');
+} else {
+  app.log.info('Sonatype adapter registered (OSS Index live)');
+}
+
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
-if (scannerConfigs.sonatype) app.log.info('Sonatype adapter registered (stub)');
 
 try {
   await app.listen({ port: apiConfig.port, host: apiConfig.host });

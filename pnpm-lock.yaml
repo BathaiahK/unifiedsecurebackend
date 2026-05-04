@@ -29,6 +29,9 @@ importers:
       '@usp/adapter-blackduck':
         specifier: workspace:*
         version: link:../../packages/adapters/blackduck
+      '@usp/adapter-sonatype':
+        specifier: workspace:*
+        version: link:../../packages/adapters/sonatype
       '@usp/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -85,6 +88,22 @@ importers:
       vitest:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.39)
+
+  packages/adapters/sonatype:
+    dependencies:
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.2
+        version: 20.19.39
+      tsup:
+        specifier: ^8.1.0
+        version: 8.5.1(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
 
   packages/config:
     dependencies:

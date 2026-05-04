@@ -7,6 +7,8 @@ import { enrichFindings } from '@usp/remediation';
 import { getRemediationConfig } from '@usp/config';
 import { prisma } from '../db.js';
 import { getAdapter } from '../adapter-registry.js';
+import { fetchRepoFiles } from '../lib/repo-fetcher.js';
+import { extractPurls } from '../lib/purl-extractor.js';
 
 export const scansRoutes: FastifyPluginAsync = async (app) => {
   app.post('/api/scans', async (req, reply) => {
@@ -176,10 +178,42 @@ async function runScanPipeline(
   await prisma.scan.update({ where: { id: scanId }, data: { status: 'running' } });
 
   try {
+    // ── Step 1: fetch real package coordinates from the project repo ──────────
+    const repoUrl = config.options?.['repoUrl'] as string | undefined;
+    const branch  = (config.options?.['branch'] as string | undefined) ?? 'main';
+    let purls: string[] = (config.options?.['purls'] as string[] | undefined) ?? [];
+
+    if (repoUrl && purls.length === 0) {
+      try {
+        // Use the project's stored gitToken for private repo access
+        const project = await prisma.project.findFirst({ where: { name: config.asset } });
+        const projectToken = project?.gitToken ?? undefined;
+
+        const files = await fetchRepoFiles(repoUrl, branch, undefined, projectToken);
+        purls = extractPurls(files);
+        if (purls.length > 0) {
+          console.info(
+            `[scan:${scanId}] Extracted ${purls.length} package coordinates from ${repoUrl} (branch: ${branch})`,
+          );
+        } else {
+          console.warn(
+            `[scan:${scanId}] No recognised dependency files found in ${repoUrl} — falling back to simulation`,
+          );
+        }
+      } catch (fetchErr) {
+        // Repo unreachable or private without token — continue with simulator data
+        console.warn(`[scan:${scanId}] Repo fetch failed: ${String(fetchErr)}`);
+      }
+    }
+
+    // Merge extracted purls into options so adapters can use them
+    const mergedOptions: Record<string, unknown> = { ...(config.options ?? {}), purls };
+
+    // ── Step 2: trigger the adapter ──────────────────────────────────────────
     const { scanId: externalScanId } = await adapter.trigger({
       tool: config.tool as import('@usp/schema').Tool,
       asset: config.asset,
-      ...(config.options !== undefined ? { options: config.options } : {}),
+      options: mergedOptions,
     });
 
     // Poll until complete or failed
@@ -237,12 +271,23 @@ async function runScanPipeline(
     const medium   = enriched.filter((f) => f.severity === 'medium').length;
     const passedGate = critical === 0 && high === 0;
 
-    // Duck-type call getBOMSummary if the adapter exposes it (BlackDuck-specific)
-    let meta: Record<string, unknown> = {};
+    // Duck-type call tool-specific report methods not on the ScannerAdapter interface
+    let meta: Record<string, unknown> = {
+      // Track how many real packages were scanned (0 = simulator data was used)
+      purlsScanned: purls.length,
+      repoUrl:      repoUrl ?? null,
+      branch:       branch,
+    };
     const adapterAny = adapter as Record<string, unknown>;
     if (typeof adapterAny['getBOMSummary'] === 'function') {
+      // BlackDuck: BOM + license + BDSA summary
       const bom = await (adapterAny['getBOMSummary'] as (id: string) => Promise<unknown>)(externalScanId);
-      if (bom) meta = { bom };
+      if (bom) meta = { ...meta, bom };
+    }
+    if (typeof adapterAny['getApplicationReport'] === 'function') {
+      // Sonatype: golden versions, reachability, quality risk, supply chain threats
+      const report = await (adapterAny['getApplicationReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      if (report) meta = { ...meta, report };
     }
 
     await prisma.scan.update({
