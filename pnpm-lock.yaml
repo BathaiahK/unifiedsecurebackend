@@ -53,6 +53,9 @@ importers:
       fastify:
         specifier: ^4.28.0
         version: 4.29.1
+      mongodb:
+        specifier: ^6.5.0
+        version: 6.21.0
       zod:
         specifier: ^3.23.8
         version: 3.25.76

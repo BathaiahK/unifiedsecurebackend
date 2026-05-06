@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma } from '../db.js';
+import { prisma, mongoClient } from '../db.js';
 
 const CreateProjectSchema = z.object({
   name:          z.string().min(1),
@@ -21,8 +21,12 @@ const UpdateProjectSchema = z.object({
 
 export const projectsRoutes: FastifyPluginAsync = async (app) => {
   app.get('/api/projects', async (_req, reply) => {
-    const projects = await prisma.project.findMany({ orderBy: { createdAt: 'asc' } });
-    return reply.send(projects.map(maskToken));
+    const db = mongoClient.db();
+    const projects = await db.collection('Project').find({}).sort({ createdAt: 1 }).toArray();
+    return reply.send(projects.map((p: any) => {
+      const { _id, ...rest } = p;
+      return maskToken({ id: _id, ...rest });
+    }));
   });
 
   app.post('/api/projects', async (req, reply) => {
@@ -31,13 +35,30 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: 'Invalid project data', details: body.error.flatten() });
     }
     try {
-      const project = await prisma.project.create({
-        data: { id: randomUUID(), ...body.data },
-      });
+      const projectId = randomUUID();
+      const createdAt = new Date();
+      const projectData = {
+        _id: projectId,
+        name: body.data.name,
+        repoUrl: body.data.repoUrl,
+        defaultBranch: body.data.defaultBranch || 'main',
+        description: body.data.description || null,
+        gitToken: body.data.gitToken || null,
+        createdAt,
+      };
+
+      const db = mongoClient.db();
+      await db.collection('Project').insertOne(projectData as any);
+
+      const project = {
+        id: projectId,
+        ...body.data,
+        createdAt,
+      };
       return reply.status(201).send(maskToken(project));
     } catch (err: unknown) {
-      const e = err as { code?: string };
-      if (e.code === 'P2002') {
+      const e = err as any;
+      if (e?.code === 11000 || e?.message?.includes('duplicate')) {
         return reply.status(409).send({ error: `A project named "${body.data.name}" already exists` });
       }
       throw err;
@@ -50,11 +71,17 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: 'Invalid project data', details: body.error.flatten() });
     }
     try {
-      const project = await prisma.project.update({
-        where: { id: req.params.id },
-        data: body.data,
-      });
-      return reply.send(maskToken(project));
+      const db = mongoClient.db();
+      const result = await db.collection('Project').updateOne(
+        { _id: req.params.id },
+        { $set: body.data },
+      );
+      if (result.matchedCount === 0) {
+        return reply.status(404).send({ error: 'Project not found' });
+      }
+      const project = await db.collection('Project').findOne({ _id: req.params.id });
+      const { _id, ...rest } = project || {};
+      return reply.send(maskToken({ id: _id, ...rest }));
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
     }
@@ -62,7 +89,11 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete<{ Params: { id: string } }>('/api/projects/:id', async (req, reply) => {
     try {
-      await prisma.project.delete({ where: { id: req.params.id } });
+      const db = mongoClient.db();
+      const result = await db.collection('Project').deleteOne({ _id: req.params.id });
+      if (result.deletedCount === 0) {
+        return reply.status(404).send({ error: 'Project not found' });
+      }
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });

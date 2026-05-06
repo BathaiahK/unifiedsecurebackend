@@ -5,7 +5,7 @@ import { ScanConfigSchema } from '@usp/schema';
 import type { RemediationEngineConfig } from '@usp/remediation';
 import { enrichFindings } from '@usp/remediation';
 import { getRemediationConfig } from '@usp/config';
-import { prisma } from '../db.js';
+import { prisma, mongoClient } from '../db.js';
 import { getAdapter } from '../adapter-registry.js';
 import { fetchRepoFiles } from '../lib/repo-fetcher.js';
 import { extractPurls } from '../lib/purl-extractor.js';
@@ -24,8 +24,20 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(400).send({ error: `Adapter not available for tool: ${config.data.tool}` });
     }
 
-    const scan = await prisma.scan.create({
-      data: { id: randomUUID(), tool: config.data.tool, asset: config.data.asset, status: 'queued' },
+    const scanId = randomUUID();
+    const db = mongoClient.db();
+    await db.collection('Scan').insertOne({
+      _id: scanId,
+      tool: config.data.tool,
+      asset: config.data.asset,
+      status: 'queued',
+      startedAt: new Date(),
+      completedAt: null,
+      critical: null,
+      high: null,
+      medium: null,
+      passedGate: null,
+      meta: {},
     });
 
     const pipelineConfig = {
@@ -33,11 +45,11 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       asset: config.data.asset,
       ...(config.data.options !== undefined ? { options: config.data.options } : {}),
     };
-    runScanPipeline(scan.id, pipelineConfig, adapter).catch((err) => {
-      app.log.error({ scanId: scan.id, err }, 'Scan pipeline failed');
+    runScanPipeline(scanId, pipelineConfig, adapter).catch((err) => {
+      app.log.error({ scanId, err }, 'Scan pipeline failed');
     });
 
-    return reply.status(202).send({ scanId: scan.id, status: 'queued' });
+    return reply.status(202).send({ scanId, status: 'queued' });
   });
 
   // SSE: stream live scan status updates until complete/failed
@@ -175,7 +187,8 @@ async function runScanPipeline(
   config: { tool: string; asset: string; options?: Record<string, unknown> },
   adapter: import('@usp/schema').ScannerAdapter,
 ): Promise<void> {
-  await prisma.scan.update({ where: { id: scanId }, data: { status: 'running' } });
+  const db = mongoClient.db();
+  await db.collection('Scan').updateOne({ _id: scanId }, { $set: { status: 'running' } });
 
   try {
     // ── Step 1: fetch real package coordinates from the project repo ──────────
@@ -243,26 +256,27 @@ async function runScanPipeline(
 
     // Persist findings in MongoDB
     if (enriched.length > 0) {
-      await prisma.finding.createMany({
-        data: enriched.map((f) => ({
-          id:               f.id,
-          tool:             f.tool,
-          severity:         f.severity,
-          cvss:             f.cvss,
-          cve:              f.cve,
-          cwe:              f.cwe,
-          title:            f.title,
-          asset:            f.asset,
-          status:           f.status,
-          fixVersion:       f.fixVersion,
-          firstSeen:        new Date(f.firstSeen),
-          lastSeen:         new Date(f.lastSeen),
-          remediationSteps: f.remediationSteps,
-          references:       f.references as Prisma.InputJsonValue,
-          evidence:         f.evidence as Prisma.InputJsonValue,
-          scanId:           f.scanId,
-        })),
-      });
+      const findings = enriched.map((f) => ({
+        _id:              f.id,
+        tool:             f.tool,
+        severity:         f.severity,
+        cvss:             f.cvss,
+        cve:              f.cve,
+        cwe:              f.cwe,
+        title:            f.title,
+        asset:            f.asset,
+        status:           f.status,
+        fixVersion:       f.fixVersion,
+        firstSeen:        new Date(f.firstSeen),
+        lastSeen:         new Date(f.lastSeen),
+        remediationSteps: f.remediationSteps,
+        references:       f.references,
+        evidence:         f.evidence,
+        scanId:           f.scanId,
+      }));
+      if (findings.length > 0) {
+        await db.collection('Finding').insertMany(findings);
+      }
     }
 
     // Compute severity counts for the scan record
@@ -295,20 +309,22 @@ async function runScanPipeline(
       if (ghReport) meta = { ...meta, gitHistoryReport: ghReport };
     }
 
-    await prisma.scan.update({
-      where: { id: scanId },
-      data: {
-        status: 'complete',
-        completedAt: new Date(),
-        critical,
-        high,
-        medium,
-        passedGate,
-        meta: meta as import('@prisma/client').Prisma.InputJsonValue,
+    await db.collection('Scan').updateOne(
+      { _id: scanId },
+      {
+        $set: {
+          status: 'complete',
+          completedAt: new Date(),
+          critical,
+          high,
+          medium,
+          passedGate,
+          meta,
+        },
       },
-    });
+    );
   } catch (err) {
-    await prisma.scan.update({ where: { id: scanId }, data: { status: 'failed' } });
+    await db.collection('Scan').updateOne({ _id: scanId }, { $set: { status: 'failed' } });
     throw err;
   }
 }

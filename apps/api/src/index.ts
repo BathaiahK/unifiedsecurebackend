@@ -85,14 +85,18 @@ try {
 }
 
 // Kick off vuln-db sync in the background after server is listening
-// so the server is responsive immediately on startup
-setImmediate(async () => {
-  try {
-    app.log.info('[vuln-db] Starting background sync from OSV...');
-    const store = await getVulnStore(apiConfig.databaseUrl);
-    await syncAllEcosystems(store);
-    app.log.info('[vuln-db] Background sync complete');
-  } catch (err) {
-    app.log.error({ err }, '[vuln-db] Background sync failed');
-  }
-});
+// (disabled for development to avoid memory issues; enable in production)
+if (apiConfig.nodeEnv === 'production') {
+  setImmediate(async () => {
+    try {
+      app.log.info('[vuln-db] Starting background sync from OSV...');
+      const store = await getVulnStore(apiConfig.databaseUrl);
+      await syncAllEcosystems(store);
+      app.log.info('[vuln-db] Background sync complete');
+    } catch (err) {
+      app.log.error({ err }, '[vuln-db] Background sync failed');
+    }
+  });
+} else {
+  app.log.info('[vuln-db] Disabled in development mode (enable in production)');
+}

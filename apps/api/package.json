@@ -16,6 +16,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "mongodb": "^6.5.0",
     "@prisma/client": "^5.15.0",
     "@usp/config": "workspace:*",
     "@usp/schema": "workspace:*",
