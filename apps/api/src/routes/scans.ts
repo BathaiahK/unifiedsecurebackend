@@ -289,6 +289,11 @@ async function runScanPipeline(
       const report = await (adapterAny['getApplicationReport'] as (id: string) => Promise<unknown>)(externalScanId);
       if (report) meta = { ...meta, report };
     }
+    if (typeof adapterAny['getGitHistoryReport'] === 'function') {
+      // Git History: secrets by category/severity, oldest/newest commit with secret
+      const ghReport = await (adapterAny['getGitHistoryReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      if (ghReport) meta = { ...meta, gitHistoryReport: ghReport };
+    }
 
     await prisma.scan.update({
       where: { id: scanId },

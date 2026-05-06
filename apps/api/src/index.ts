@@ -10,6 +10,9 @@ import { projectsRoutes } from './routes/projects.js';
 import { registerAdapter } from './adapter-registry.js';
 import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 import { SonatypeAdapter } from '@usp/adapter-sonatype';
+import { ScaAdapter } from '@usp/adapter-sca';
+import { GitHistoryAdapter } from '@usp/adapter-git-history';
+import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 
 const apiConfig = getApiConfig();
 const scannerConfigs = getScannerConfigs();
@@ -61,6 +64,16 @@ if (snAdapter.isSimulated) {
   app.log.info('Sonatype adapter registered (OSS Index live)');
 }
 
+// SCA: local detection engine backed by OSV vulnerability database
+const scaAdapter = new ScaAdapter({ mongoUrl: apiConfig.databaseUrl });
+registerAdapter(scaAdapter);
+app.log.info('SCA adapter registered (local OSV detection engine)');
+
+// Git History: local secret scanner — no external tool required
+const gitHistoryAdapter = new GitHistoryAdapter();
+registerAdapter(gitHistoryAdapter);
+app.log.info('Git History adapter registered (local secret scanner)');
+
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
 
@@ -70,3 +83,16 @@ try {
   app.log.error(err);
   process.exit(1);
 }
+
+// Kick off vuln-db sync in the background after server is listening
+// so the server is responsive immediately on startup
+setImmediate(async () => {
+  try {
+    app.log.info('[vuln-db] Starting background sync from OSV...');
+    const store = await getVulnStore(apiConfig.databaseUrl);
+    await syncAllEcosystems(store);
+    app.log.info('[vuln-db] Background sync complete');
+  } catch (err) {
+    app.log.error({ err }, '[vuln-db] Background sync failed');
+  }
+});
