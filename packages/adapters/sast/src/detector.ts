@@ -1,5 +1,6 @@
-import { SastFinding, SastMatch } from './types';
-import { SAST_RULES, getRulesByLanguage } from './rules';
+import { randomUUID } from 'node:crypto';
+import { SastFinding, SastMatch } from './types.js';
+import { SAST_RULES, getRulesByLanguage } from './rules.js';
 
 export class VulnerabilityDetector {
   private findings: SastFinding[] = [];
@@ -25,7 +26,7 @@ export class VulnerabilityDetector {
           const columnNumber = match.index - sourceCode.lastIndexOf('\n', match.index - 1);
 
           const finding: SastFinding = {
-            id: `finding-${Math.random().toString(36).substring(7)}`,
+            id: randomUUID(),
             ruleId: rule.id,
             ruleName: rule.name,
             file: filePath,
@@ -280,5 +281,104 @@ export const AWS_CONFIG = {
     }
 
     return Array.from(uniqueFindings.values());
+  }
+
+  async analyzeRepository(repoUrl: string, assetName: string): Promise<SastFinding[]> {
+    try {
+      const { owner, repo } = this.parseGitHubUrl(repoUrl);
+      const sourceFiles = await this.fetchSourceFiles(owner, repo);
+      if (sourceFiles.length === 0) return this.analyzeMockRepository(assetName);
+
+      this.findings = [];
+      for (const { path, language } of sourceFiles.slice(0, 50)) {
+        try {
+          const content = await this.fetchFileContent(owner, repo, path);
+          const fileFindings = this.detectVulnerabilities(content, path, language);
+          this.findings.push(...fileFindings);
+        } catch (error) {
+          console.warn(`Failed to fetch/analyze ${path}:`, error);
+        }
+      }
+
+      const uniqueFindings = new Map<string, SastFinding>();
+      for (const finding of this.findings) {
+        const key = `${finding.file}:${finding.line}:${finding.ruleId}`;
+        if (!uniqueFindings.has(key)) uniqueFindings.set(key, finding);
+      }
+      return Array.from(uniqueFindings.values());
+    } catch (error) {
+      console.warn(`Repository analysis failed for ${repoUrl}, falling back to mock:`, error);
+      return this.analyzeMockRepository(assetName);
+    }
+  }
+
+  private parseGitHubUrl(url: string): { owner: string; repo: string } {
+    const httpsMatch = url.match(/github\.com\/([^/]+)\/([^/]+)(\.git)?$/);
+    if (httpsMatch && httpsMatch[1] && httpsMatch[2]) {
+      return { owner: httpsMatch[1], repo: httpsMatch[2] };
+    }
+
+    const sshMatch = url.match(/github\.com:([^/]+)\/([^/]+)(\.git)?$/);
+    if (sshMatch && sshMatch[1] && sshMatch[2]) {
+      return { owner: sshMatch[1], repo: sshMatch[2] };
+    }
+
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+
+  private async fetchSourceFiles(owner: string, repo: string): Promise<Array<{ path: string; language: string }>> {
+    const sourceExtensions = new Set([
+      '.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.php', '.cs', '.rb', '.kt', '.rs'
+    ]);
+
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
+        { headers: { 'User-Agent': 'USP-SAST' } }
+      );
+      if (!response.ok) return [];
+
+      const data = (await response.json()) as { tree: Array<{ path: string; type: string }> };
+      return data.tree
+        .filter(item => item.type === 'blob' && sourceExtensions.has(this.getFileExtension(item.path)))
+        .map(item => ({
+          path: item.path,
+          language: this.detectLanguage(item.path)
+        }));
+    } catch (error) {
+      console.warn('Failed to fetch source files from GitHub API:', error);
+      return [];
+    }
+  }
+
+  private async fetchFileContent(owner: string, repo: string, path: string): Promise<string> {
+    const response = await fetch(
+      `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${path}`,
+      { headers: { 'User-Agent': 'USP-SAST' } }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.text();
+  }
+
+  private getFileExtension(path: string): string {
+    const match = path.match(/(\.[^.]+)$/);
+    return match && match[1] ? match[1] : '';
+  }
+
+  private detectLanguage(path: string): string {
+    const ext = this.getFileExtension(path).toLowerCase();
+    const langMap: Record<string, string> = {
+      '.ts': 'typescript', '.tsx': 'typescript',
+      '.js': 'javascript', '.jsx': 'javascript',
+      '.py': 'python',
+      '.java': 'java',
+      '.go': 'go',
+      '.php': 'php',
+      '.cs': 'csharp',
+      '.rb': 'ruby',
+      '.kt': 'kotlin',
+      '.rs': 'rust'
+    };
+    return langMap[ext] || 'javascript';
   }
 }

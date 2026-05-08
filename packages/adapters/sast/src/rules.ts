@@ -1,4 +1,4 @@
-import { SastRule } from './types';
+import { SastRule } from './types.js';
 
 export const SAST_RULES: SastRule[] = [
   {

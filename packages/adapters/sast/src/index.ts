@@ -1,4 +1,4 @@
-export { SastAdapter } from './adapter';
-export { VulnerabilityDetector } from './detector';
-export { SAST_RULES, getRuleById, getRulesByLanguage } from './rules';
-export type { SastRule, SastFinding, SastMatch, SastReport } from './types';
+export { SastAdapter } from './adapter.js';
+export { VulnerabilityDetector } from './detector.js';
+export { SAST_RULES, getRuleById, getRulesByLanguage } from './rules.js';
+export type { SastRule, SastFinding, SastMatch, SastReport, SastSummary } from './types.js';

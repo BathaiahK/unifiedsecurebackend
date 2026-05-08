@@ -1,9 +1,9 @@
 {
-  "name": "@usp/adapter-sast",
+  "name": "@usp/adapter-dast",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "SAST (Static Application Security Testing) adapter for USP",
+  "description": "DAST (Dynamic Application Security Testing) adapter for USP",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

@@ -32,6 +32,9 @@ importers:
       '@usp/adapter-git-history':
         specifier: workspace:*
         version: link:../../packages/adapters/git-history
+      '@usp/adapter-sast':
+        specifier: workspace:*
+        version: link:../../packages/adapters/sast
       '@usp/adapter-sca':
         specifier: workspace:*
         version: link:../../packages/adapters/sca
@@ -79,6 +82,25 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.39)
 
+  packages/adapters/api-security:
+    dependencies:
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.39
+      tsup:
+        specifier: ^8.1.0
+        version: 8.5.1(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.39)
+
   packages/adapters/blackduck:
     dependencies:
       '@usp/schema':
@@ -99,6 +121,25 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.39)
+
+  packages/adapters/dast:
+    dependencies:
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.39
+      tsup:
+        specifier: ^8.1.0
+        version: 8.5.1(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.39)
 
   packages/adapters/git-history:
@@ -129,6 +170,9 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.39
+      tsup:
+        specifier: ^8.1.0
+        version: 8.5.1(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

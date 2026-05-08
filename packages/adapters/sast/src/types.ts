@@ -52,3 +52,12 @@ export interface SastReport {
     scanDurationMs: number;
   };
 }
+
+export interface SastSummary {
+  totalFindings: number;
+  bySeverity: { total: number; critical: number; high: number; medium: number; low: number };
+  filesScanned: number;
+  rulesApplied: number;
+  scanDurationMs: number;
+  topRules: Array<{ ruleId: string; ruleName: string; count: number }>;
+}

@@ -14,6 +14,8 @@ import { SonatypeAdapter } from '@usp/adapter-sonatype';
 import { ScaAdapter } from '@usp/adapter-sca';
 import { GitHistoryAdapter } from '@usp/adapter-git-history';
 import { SastAdapter } from '@usp/adapter-sast';
+import { DastAdapter } from '@usp/adapter-dast';
+import { ApiSecurityAdapter } from '@usp/adapter-api-security';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 
 const apiConfig = getApiConfig();
@@ -81,6 +83,16 @@ app.log.info('Git History adapter registered (local secret scanner)');
 const sastAdapter = new SastAdapter();
 registerAdapter(sastAdapter);
 app.log.info('SAST adapter registered (code vulnerability scanner)');
+
+// DAST: Dynamic Application Security Testing — tests running applications
+const dastAdapter = new DastAdapter();
+registerAdapter(dastAdapter);
+app.log.info('DAST adapter registered (dynamic application security testing)');
+
+// API Security: OpenAPI spec validation & auto-discovery
+const apiSecurityAdapter = new ApiSecurityAdapter();
+registerAdapter(apiSecurityAdapter);
+app.log.info('API Security adapter registered (OpenAPI validation & auto-discovery)');
 
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');

@@ -340,6 +340,21 @@ async function runScanPipeline(
       const scReport = (adapterAny['getSupplyChainReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
       if (scReport) meta = { ...meta, supplyChainReport: scReport };
     }
+    if (typeof adapterAny['getSastReport'] === 'function') {
+      // SAST: rule hit breakdown, files scanned, top vulnerabilities
+      const sastReport = (adapterAny['getSastReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      if (sastReport) meta = { ...meta, sastReport };
+    }
+    if (typeof adapterAny['getDastReport'] === 'function') {
+      // DAST: endpoints tested, requests sent, vulnerabilities found
+      const dastReport = (adapterAny['getDastReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      if (dastReport) meta = { ...meta, dastReport };
+    }
+    if (typeof adapterAny['getApiSecurityReport'] === 'function') {
+      // API Security: OpenAPI spec validation, API design security issues
+      const apiSecurityReport = (adapterAny['getApiSecurityReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      if (apiSecurityReport) meta = { ...meta, apiSecurityReport };
+    }
 
     await db.collection('Scan').updateOne(
       { _id: scanId },

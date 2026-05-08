@@ -1,9 +1,9 @@
 {
-  "name": "@usp/adapter-sast",
+  "name": "@usp/adapter-api-security",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "SAST (Static Application Security Testing) adapter for USP",
+  "description": "API Security Scanner - OpenAPI spec validation & auto-discovery",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
