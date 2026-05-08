@@ -13,6 +13,7 @@ import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 import { SonatypeAdapter } from '@usp/adapter-sonatype';
 import { ScaAdapter } from '@usp/adapter-sca';
 import { GitHistoryAdapter } from '@usp/adapter-git-history';
+import { SastAdapter } from '@usp/adapter-sast';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 
 const apiConfig = getApiConfig();
@@ -75,6 +76,11 @@ app.log.info('SCA adapter registered (local OSV detection engine)');
 const gitHistoryAdapter = new GitHistoryAdapter();
 registerAdapter(gitHistoryAdapter);
 app.log.info('Git History adapter registered (local secret scanner)');
+
+// SAST: Static Application Security Testing — detects code vulnerabilities
+const sastAdapter = new SastAdapter();
+registerAdapter(sastAdapter);
+app.log.info('SAST adapter registered (code vulnerability scanner)');
 
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');

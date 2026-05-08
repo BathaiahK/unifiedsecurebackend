@@ -24,6 +24,7 @@
     "@usp/adapter-sonatype": "workspace:*",
     "@usp/adapter-sca": "workspace:*",
     "@usp/adapter-git-history": "workspace:*",
+    "@usp/adapter-sast": "workspace:*",
     "@usp/vuln-db": "workspace:*",
     "@usp/remediation": "workspace:*",
     "fastify": "^4.28.0",
