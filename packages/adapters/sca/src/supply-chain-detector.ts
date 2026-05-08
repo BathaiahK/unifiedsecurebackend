@@ -39,7 +39,7 @@ const TOP_100_NPM_PACKAGES = new Set([
 
 export function extractName(purl: string): string | undefined {
   try {
-    const match = purl.match(/^pkg:npm\/(@?[^@/]+)(?:\/[^@]+)?(?:@[^#?]+)?/);
+    const match = purl.match(/^pkg:npm\/((@[^\/]+\/)?[^@]+)/);
     return match ? match[1] : undefined;
   } catch {
     return undefined;
