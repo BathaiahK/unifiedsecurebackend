@@ -3,8 +3,8 @@ import { getVulnStore, lookupPurls, type VulnStore } from '@usp/vuln-db';
 import { normalizeMatch } from './normalize.js';
 import { scaStreamingQueue } from './streaming-queue.js';
 import { analyzeLicenseRisk, aggregateLicenseRisks, generateLicenseReport } from './license-analyzer.js';
-import { runSupplyChainAnalysis } from './supply-chain-detector.js';
-import type { TransitiveDependency, SupplyChainReport } from './types.js';
+import { resolveTransitiveDependencies, buildDependencyTree, countTransitiveVulnerabilities, getTransitiveChain } from './transitive-resolver.js';
+import type { TransitiveDependency, EnhancedFinding } from './types.js';
 
 interface PendingScan {
   purls: string[];
@@ -14,7 +14,6 @@ interface PendingScan {
   transitiveDeps: TransitiveDependency[] | null;
   dependencyTree: Record<string, any> | null;
   licenseRisks: { safe: number; warning: number; critical: number } | null;
-  supplyChainReport: SupplyChainReport | null;
 }
 
 export interface ScaAdapterConfig {
@@ -22,7 +21,7 @@ export interface ScaAdapterConfig {
   dbName?: string;
 }
 
-export class ScaAdapter implements ScannerAdapter {
+export class ScaAdapterEnhanced implements ScannerAdapter {
   readonly tool = 'sca';
 
   private readonly mongoUrl: string;
@@ -48,6 +47,7 @@ export class ScaAdapter implements ScannerAdapter {
     const purls = (config.options?.['purls'] as string[] | undefined) ?? [];
     const scanId = `sca-${Date.now()}-${config.asset}`;
 
+    // Initialize pending scan
     this.pendingScans.set(scanId, {
       purls,
       asset: config.asset,
@@ -56,7 +56,6 @@ export class ScaAdapter implements ScannerAdapter {
       transitiveDeps: null,
       dependencyTree: null,
       licenseRisks: null,
-      supplyChainReport: null,
     });
 
     // Start async processing in background (don't await)
@@ -106,7 +105,7 @@ export class ScaAdapter implements ScannerAdapter {
       // Stage 3: License Analysis (75%)
       scaStreamingQueue.progress(scanId, 'running', 60, 'license-analysis', 'Analyzing licenses...');
 
-      // Simulate license analysis (in real scenario, would extract from manifests)
+      // For now, simulate license analysis (in real scenario, would extract from manifests)
       const sampleLicenses = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'GPL-2.0', 'Proprietary'];
       const licenseAnalysis = aggregateLicenseRisks(sampleLicenses);
       pending.licenseRisks = {
@@ -122,29 +121,19 @@ export class ScaAdapter implements ScannerAdapter {
 
       await sleep(200);
 
-      // Stage 4: Supply Chain Security (76–83%)
-      scaStreamingQueue.progress(
-        scanId,
-        'running',
-        76,
-        'supply-chain',
-        `Analyzing ${pending.purls.length} packages for supply chain threats...`,
-      );
-
-      const supplyChainReport = runSupplyChainAnalysis(pending.purls);
-      pending.supplyChainReport = supplyChainReport;
-
-      scaStreamingQueue.progress(scanId, 'running', 83, 'supply-chain',
-        `Supply chain analysis: ${supplyChainReport.threats.length} threat(s) found`);
-
-      await sleep(150);
-
-      // Stage 5: Remediation & Summary (95%)
+      // Stage 4: Remediation & Summary (90%)
       scaStreamingQueue.progress(scanId, 'running', 85, 'remediation', 'Generating remediation plan...');
+
+      // Simulate remediation generation
+      const remediationSteps = findings.slice(0, 3).map((f) => `${f.title} → upgrade to available fix version`);
+
+      scaStreamingQueue.progress(scanId, 'running', 95, 'remediation', 'Scan complete', {
+        findingCount: findings.length,
+      });
 
       await sleep(100);
 
-      // Stage 6: Complete (100%)
+      // Stage 5: Complete (100%)
       scaStreamingQueue.progress(scanId, 'complete', 100, 'complete', 'Scan completed successfully', {
         findingCount: findings.length,
         licenseRisks: pending.licenseRisks,
@@ -228,13 +217,6 @@ export class ScaAdapter implements ScannerAdapter {
    */
   getDependencyTree(scanId: string) {
     return this.pendingScans.get(scanId)?.dependencyTree;
-  }
-
-  /**
-   * Get supply chain report for a scan
-   */
-  getSupplyChainReport(scanId: string): SupplyChainReport | null {
-    return this.pendingScans.get(scanId)?.supplyChainReport ?? null;
   }
 }
 

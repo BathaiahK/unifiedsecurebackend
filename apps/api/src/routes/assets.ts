@@ -3,13 +3,13 @@ import { prisma } from '../db.js';
 
 const TOOL_META: Record<string, { label: string; category: string }> = {
   blackduck:  { label: 'BlackDuck',  category: 'SCA · open-source' },
-  sonatype:   { label: 'Sonatype',   category: 'SCA · supply chain' },
+  governance: { label: 'Package Governance', category: 'License & policy compliance' },
   sysdig:     { label: 'Sysdig',     category: 'Container runtime' },
   dast:       { label: 'DAST',       category: 'Dynamic app scan' },
   '42crunch': { label: '42Crunch',   category: 'API security · OpenAPI' },
 };
 
-const ALL_TOOLS = ['blackduck', 'sonatype', 'sysdig', 'dast', '42crunch'];
+const ALL_TOOLS = ['blackduck', 'governance', 'sysdig', 'dast', '42crunch'];
 
 export const assetsRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/assets — all unique assets with health derived from open findings
@@ -97,7 +97,7 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
             stat('CVEs', critCount > 0 ? `${critCount} crit` : `${totalCount}`, critCount > 0 ? 'red' : undefined),
             stat('Pkgs', String(totalCount + 130)),
           ];
-        } else if (tool === 'sonatype') {
+        } else if (tool === 'governance') {
           stats = [
             stat('Policy', highCount > 0 ? `${highCount} warn` : 'pass', highCount > 0 ? 'orange' : 'green'),
             stat('Cmps', String(totalCount + 80)),

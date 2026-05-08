@@ -9,6 +9,7 @@ import { prisma, mongoClient } from '../db.js';
 import { getAdapter } from '../adapter-registry.js';
 import { fetchRepoFiles } from '../lib/repo-fetcher.js';
 import { extractPurls } from '../lib/purl-extractor.js';
+import { scaStreamingQueue } from '@usp/adapter-sca';
 
 export const scansRoutes: FastifyPluginAsync = async (app) => {
   app.post('/api/scans', async (req, reply) => {
@@ -53,7 +54,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // SSE: stream live scan status updates until complete/failed
-  app.get<{ Params: { id: string } }>('/api/scans/:id/events', (req, reply) => {
+  app.get<{ Params: { id: string } }>('/api/scans/:id/events', async (req, reply) => {
     reply.hijack();
     const res = reply.raw;
     const origin = req.headers.origin ?? '*';
@@ -72,6 +73,29 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     const send = (data: object) => {
       if (!closed) res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
+
+    // Check if it's an SCA scan and subscribe to real-time streaming if so
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const scan = await prisma.scan.findUnique({
+        where: { id: req.params.id },
+      });
+      if (scan?.tool === 'sca' && typeof scan.meta === 'object' && scan.meta !== null) {
+        const meta = scan.meta as Record<string, unknown>;
+        const externalScanId = meta.externalScanId;
+        if (typeof externalScanId === 'string' && externalScanId.startsWith('sca-')) {
+          unsubscribe = scaStreamingQueue.subscribe(externalScanId, (event) => {
+            send(event);
+            if (event.status === 'complete' || event.status === 'failed') {
+              res.end();
+              if (unsubscribe) unsubscribe();
+            }
+          });
+        }
+      }
+    } catch {
+      // Ignore errors in subscription setup, fall back to polling
+    }
 
     const poll = async (): Promise<void> => {
       if (closed) return;
@@ -96,6 +120,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       }
     };
 
+    // Start polling for database updates
     poll().catch(() => res.end());
   });
 
@@ -291,6 +316,8 @@ async function runScanPipeline(
       purlsScanned: purls.length,
       repoUrl:      repoUrl ?? null,
       branch:       branch,
+      externalScanId: externalScanId,
+      purls,        // Store for SBOM generation
     };
     const adapterAny = adapter as Record<string, unknown>;
     if (typeof adapterAny['getBOMSummary'] === 'function') {
@@ -307,6 +334,11 @@ async function runScanPipeline(
       // Git History: secrets by category/severity, oldest/newest commit with secret
       const ghReport = await (adapterAny['getGitHistoryReport'] as (id: string) => Promise<unknown>)(externalScanId);
       if (ghReport) meta = { ...meta, gitHistoryReport: ghReport };
+    }
+    if (typeof adapterAny['getSupplyChainReport'] === 'function') {
+      // SCA: unmaintained packages, typosquatting, duplicate version conflicts
+      const scReport = (adapterAny['getSupplyChainReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      if (scReport) meta = { ...meta, supplyChainReport: scReport };
     }
 
     await db.collection('Scan').updateOne(

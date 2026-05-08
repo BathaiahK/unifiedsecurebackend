@@ -7,6 +7,7 @@ import { statsRoutes } from './routes/stats.js';
 import { assetsRoutes } from './routes/assets.js';
 import { reportsRoutes } from './routes/reports.js';
 import { projectsRoutes } from './routes/projects.js';
+import { sbomRoutes } from './routes/sbom.js';
 import { registerAdapter } from './adapter-registry.js';
 import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 import { SonatypeAdapter } from '@usp/adapter-sonatype';
@@ -37,6 +38,7 @@ app.get('/health', async () => ({
 
 await app.register(findingsRoutes);
 await app.register(scansRoutes);
+await app.register(sbomRoutes);
 await app.register(statsRoutes);
 await app.register(assetsRoutes);
 await app.register(reportsRoutes);

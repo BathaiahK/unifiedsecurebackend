@@ -33,7 +33,7 @@ type PendingScan = {
 // ── Adapter ────────────────────────────────────────────────────────────────────
 
 export class SonatypeAdapter implements ScannerAdapter {
-  readonly tool = 'sonatype';
+  readonly tool = 'governance';
 
   private readonly backend: SonatypeBackend;
   private readonly simulated: boolean;

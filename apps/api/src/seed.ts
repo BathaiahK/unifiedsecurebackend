@@ -31,8 +31,8 @@ async function main() {
     { id: SCAN.sysPayment, tool: 'sysdig',     asset: 'payment-service', status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 20 * 60_000), critical: 1, high: 0, medium: 0, passedGate: false },
     { id: SCAN.crunchApi,  tool: '42crunch',   asset: 'api-gateway',     status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 10 * 60_000), critical: 0, high: 2, medium: 1, passedGate: true  },
     { id: SCAN.dastApi,    tool: 'dast',       asset: 'api-gateway',     status: 'complete', startedAt: daysAgo(1), completedAt: new Date(daysAgo(1).getTime() + 12 * 60_000), critical: 0, high: 1, medium: 0, passedGate: false },
-    { id: SCAN.snAuth,     tool: 'sonatype',   asset: 'auth-service',    status: 'complete', startedAt: daysAgo(1), completedAt: new Date(daysAgo(1).getTime() + 8  * 60_000), critical: 1, high: 1, medium: 1, passedGate: false },
-    { id: SCAN.snPayment,  tool: 'sonatype',   asset: 'payment-service', status: 'running',  startedAt: new Date(now.getTime() - 3 * 60_000), completedAt: null, critical: null, high: null, medium: null, passedGate: null },
+    { id: SCAN.snAuth,     tool: 'governance', asset: 'auth-service',    status: 'complete', startedAt: daysAgo(1), completedAt: new Date(daysAgo(1).getTime() + 8  * 60_000), critical: 1, high: 1, medium: 1, passedGate: false },
+    { id: SCAN.snPayment,  tool: 'governance', asset: 'payment-service', status: 'running',  startedAt: new Date(now.getTime() - 3 * 60_000), completedAt: null, critical: null, high: null, medium: null, passedGate: null },
   ];
   for (const s of scans) await prisma.scan.create({ data: s });
   console.log(`  Created ${scans.length} scans`);
@@ -105,7 +105,7 @@ async function main() {
       evidence: { component: 'nghttp2:1.52.0', ecosystem: 'deb' },
     },
     {
-      id: randomUUID(), tool: 'sonatype', severity: 'critical', cvss: 9.8,
+      id: randomUUID(), tool: 'governance', severity: 'critical', cvss: 9.8,
       cve: null, cwe: null,
       title: 'Malicious package: event-stream@3.3.6',
       asset: 'payment-service', status: 'open', fixVersion: 'event-stream@3.3.4',
@@ -136,7 +136,7 @@ async function main() {
       evidence: { component: 'log4j-core:2.14.1', ecosystem: 'Maven' },
     },
     {
-      id: randomUUID(), tool: 'sonatype', severity: 'medium', cvss: 5.3,
+      id: randomUUID(), tool: 'governance', severity: 'medium', cvss: 5.3,
       cve: 'CVE-2023-26136', cwe: 'CWE-79',
       title: 'Prototype pollution in tough-cookie',
       asset: 'auth-service', status: 'open', fixVersion: '4.1.3',
