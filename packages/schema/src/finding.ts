@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ToolSchema = z.enum(['blackduck', 'sysdig', '42crunch', 'governance', 'dast', 'sca', 'git-history', 'sast', 'api-security']);
+export const ToolSchema = z.enum(['blackduck', 'sysdig', '42crunch', 'governance', 'dast', 'sca', 'git-history', 'sast', 'api-security', 'container']);
 export type Tool = z.infer<typeof ToolSchema>;
 
 export const SeveritySchema = z.enum(['critical', 'high', 'medium', 'low', 'info']);

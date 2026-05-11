@@ -23,18 +23,27 @@ const SonatypeSchema = z.object({
   password: z.string().min(1, 'SONATYPE_PASSWORD is required'),
 });
 
+const ContainerSchema = z.object({
+  trivyPath:         z.string().default('trivy'),
+  registryUsername:  z.string().optional(),
+  registryPassword:  z.string().optional(),
+  registryToken:     z.string().optional(),
+}).optional();
+
 // ── Derived types ─────────────────────────────────────────────────────────────
 
 export type BlackDuckScannerConfig = z.infer<typeof BlackDuckSchema>;
 export type SysdigScannerConfig    = z.infer<typeof SysdigSchema>;
 export type Crunch42ScannerConfig  = z.infer<typeof Crunch42Schema>;
 export type SonatypeScannerConfig  = z.infer<typeof SonatypeSchema>;
+export type ContainerScannerConfig = z.infer<typeof ContainerSchema>;
 
 export interface ScannerConfigs {
   blackduck: BlackDuckScannerConfig | null;
   sysdig:    SysdigScannerConfig    | null;
   crunch42:  Crunch42ScannerConfig  | null;
   sonatype:  SonatypeScannerConfig  | null;
+  container: ContainerScannerConfig | null;
 }
 
 // ── Loader ────────────────────────────────────────────────────────────────────
@@ -70,6 +79,13 @@ export function getScannerConfigs(): ScannerConfigs {
       url:      process.env['SONATYPE_URL'] || undefined,  // empty string → undefined
       username: process.env['SONATYPE_USERNAME'],
       password: process.env['SONATYPE_PASSWORD'],
+    }),
+
+    container: tryParse(ContainerSchema, {
+      trivyPath:        process.env['TRIVY_PATH'],
+      registryUsername: process.env['TRIVY_REGISTRY_USERNAME'],
+      registryPassword: process.env['TRIVY_REGISTRY_PASSWORD'],
+      registryToken:    process.env['TRIVY_REGISTRY_TOKEN'],
     }),
   };
 

@@ -7,9 +7,10 @@ const TOOL_META: Record<string, { label: string; category: string }> = {
   sysdig:     { label: 'Sysdig',     category: 'Container runtime' },
   dast:       { label: 'DAST',       category: 'Dynamic app scan' },
   '42crunch': { label: '42Crunch',   category: 'API security · OpenAPI' },
+  container:  { label: 'Container Security', category: 'Image scanning & hardening' },
 };
 
-const ALL_TOOLS = ['blackduck', 'governance', 'sysdig', 'dast', '42crunch'];
+const ALL_TOOLS = ['blackduck', 'governance', 'sysdig', 'dast', '42crunch', 'container'];
 
 export const assetsRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/assets — all unique assets with health derived from open findings
@@ -118,6 +119,11 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
             stat('Endpoints', String(20 + totalCount)),
             stat('Issues', String(totalCount), totalCount > 0 ? 'orange' : undefined),
             stat('OWASP API', totalCount > 0 ? 'A1, A2, A5' : 'None', totalCount > 0 ? 'orange' : undefined),
+          ];
+        } else if (tool === 'container') {
+          stats = [
+            stat('CVEs', critCount > 0 ? `${critCount} crit` : `${totalCount}`, critCount > 0 ? 'red' : undefined),
+            stat('Security gate', critCount === 0 ? 'pass' : 'fail', critCount === 0 ? 'green' : 'red'),
           ];
         }
 

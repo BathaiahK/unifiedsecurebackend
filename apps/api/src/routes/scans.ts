@@ -355,6 +355,16 @@ async function runScanPipeline(
       const apiSecurityReport = (adapterAny['getApiSecurityReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
       if (apiSecurityReport) meta = { ...meta, apiSecurityReport };
     }
+    if (typeof adapterAny['getContainerReport'] === 'function') {
+      // Container Security: image scan results, OS info, packages, config issues, runtime threats
+      const containerReport = await (adapterAny['getContainerReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      if (containerReport) meta = { ...meta, containerReport };
+    }
+    if (typeof adapterAny['getContainerSbom'] === 'function') {
+      // Container Security: CycloneDX SBOM
+      const containerSbom = await (adapterAny['getContainerSbom'] as (id: string) => Promise<unknown>)(externalScanId);
+      if (containerSbom) meta = { ...meta, containerSbom };
+    }
 
     await db.collection('Scan').updateOne(
       { _id: scanId },

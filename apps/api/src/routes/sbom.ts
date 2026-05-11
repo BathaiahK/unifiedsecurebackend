@@ -36,6 +36,22 @@ export const sbomRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const asset = scan.asset as string;
+    const tool = scan.tool as string;
+
+    // For container scans, try to use the Trivy CycloneDX SBOM first
+    if (tool === 'container' && format === 'cyclonedx') {
+      const containerSbom = (scan.meta as Record<string, unknown> | undefined)?.containerSbom as Record<string, unknown> | undefined;
+      if (containerSbom) {
+        const filename = `sbom-${id.slice(0, 8)}-cdx.json`;
+        reply
+          .header('Content-Type', 'application/json')
+          .header('Content-Disposition', `attachment; filename="${filename}"`)
+          .send(containerSbom);
+        return;
+      }
+    }
+
+    // Fallback: reconstruct from findings using SCA generators
     const sbom =
       format === 'cyclonedx'
         ? generateCycloneDxSbom(id, asset, purls)

@@ -26,9 +26,18 @@ importers:
       '@prisma/client':
         specifier: ^5.15.0
         version: 5.22.0(prisma@5.22.0)
+      '@usp/adapter-api-security':
+        specifier: workspace:*
+        version: link:../../packages/adapters/api-security
       '@usp/adapter-blackduck':
         specifier: workspace:*
         version: link:../../packages/adapters/blackduck
+      '@usp/adapter-container':
+        specifier: workspace:*
+        version: link:../../packages/adapters/container
+      '@usp/adapter-dast':
+        specifier: workspace:*
+        version: link:../../packages/adapters/dast
       '@usp/adapter-git-history':
         specifier: workspace:*
         version: link:../../packages/adapters/git-history
@@ -122,6 +131,22 @@ importers:
       vitest:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.39)
+
+  packages/adapters/container:
+    dependencies:
+      '@usp/remediation':
+        specifier: workspace:*
+        version: link:../../remediation
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.2
+        version: 20.19.39
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
 
   packages/adapters/dast:
     dependencies:

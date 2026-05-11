@@ -16,6 +16,7 @@ import { GitHistoryAdapter } from '@usp/adapter-git-history';
 import { SastAdapter } from '@usp/adapter-sast';
 import { DastAdapter } from '@usp/adapter-dast';
 import { ApiSecurityAdapter } from '@usp/adapter-api-security';
+import { ContainerAdapter } from '@usp/adapter-container';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 
 const apiConfig = getApiConfig();
@@ -93,6 +94,15 @@ app.log.info('DAST adapter registered (dynamic application security testing)');
 const apiSecurityAdapter = new ApiSecurityAdapter();
 registerAdapter(apiSecurityAdapter);
 app.log.info('API Security adapter registered (OpenAPI validation & auto-discovery)');
+
+// Container Security: Static image scanning with Trivy CLI
+const containerAdapter = new ContainerAdapter(scannerConfigs.container ?? undefined);
+registerAdapter(containerAdapter);
+if (containerAdapter.isSimulated) {
+  app.log.warn('Container Security running in SIMULATION mode — install Trivy or set TRIVY_PATH env var for live scanning');
+} else {
+  app.log.info('Container Security adapter registered (live Trivy scanning)');
+}
 
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
