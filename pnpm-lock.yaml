@@ -41,6 +41,9 @@ importers:
       '@usp/adapter-git-history':
         specifier: workspace:*
         version: link:../../packages/adapters/git-history
+      '@usp/adapter-malware':
+        specifier: workspace:*
+        version: link:../../packages/adapters/malware
       '@usp/adapter-sast':
         specifier: workspace:*
         version: link:../../packages/adapters/sast
@@ -50,6 +53,9 @@ importers:
       '@usp/adapter-sonatype':
         specifier: workspace:*
         version: link:../../packages/adapters/sonatype
+      '@usp/adapter-supply-chain':
+        specifier: workspace:*
+        version: link:../../packages/adapters/supply-chain
       '@usp/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -186,6 +192,22 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
+  packages/adapters/malware:
+    dependencies:
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.39
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.39)
+
   packages/adapters/sast:
     dependencies:
       '@usp/schema':
@@ -239,6 +261,25 @@ importers:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
+
+  packages/adapters/supply-chain:
+    dependencies:
+      '@usp/schema':
+        specifier: workspace:*
+        version: link:../../schema
+      mongodb:
+        specifier: ^6.5.0
+        version: 6.21.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.39
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.39)
 
   packages/config:
     dependencies:

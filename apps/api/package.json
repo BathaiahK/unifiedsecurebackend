@@ -28,6 +28,8 @@
     "@usp/adapter-dast": "workspace:*",
     "@usp/adapter-api-security": "workspace:*",
     "@usp/adapter-container": "workspace:*",
+    "@usp/adapter-supply-chain": "workspace:*",
+    "@usp/adapter-malware": "workspace:*",
     "@usp/vuln-db": "workspace:*",
     "@usp/remediation": "workspace:*",
     "fastify": "^4.28.0",

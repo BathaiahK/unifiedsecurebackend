@@ -17,6 +17,8 @@ import { SastAdapter } from '@usp/adapter-sast';
 import { DastAdapter } from '@usp/adapter-dast';
 import { ApiSecurityAdapter } from '@usp/adapter-api-security';
 import { ContainerAdapter } from '@usp/adapter-container';
+import { SupplyChainAdapter } from '@usp/adapter-supply-chain';
+import { MalwareAdapter } from '@usp/adapter-malware';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 
 const apiConfig = getApiConfig();
@@ -103,6 +105,16 @@ if (containerAdapter.isSimulated) {
 } else {
   app.log.info('Container Security adapter registered (live Trivy scanning)');
 }
+
+// Supply Chain: detects typosquatting, dependency confusion, unmaintained packages
+const supplyChainAdapter = new SupplyChainAdapter();
+registerAdapter(supplyChainAdapter);
+app.log.info('Supply Chain adapter registered (typosquatting, dependency confusion, unmaintained packages)');
+
+// Malware: detects obfuscated code, credential harvesting, suspicious patterns
+const malwareAdapter = new MalwareAdapter();
+registerAdapter(malwareAdapter);
+app.log.info('Malware adapter registered (code vulnerability scanner)');
 
 if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
 if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
