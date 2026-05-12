@@ -13,7 +13,7 @@ const KNOWN_ABANDONED: Record<string, { lastPublish: string; daysSince: number }
   'inherits': { lastPublish: '2021-01-13', daysSince: 1600 },
 };
 
-const TOP_100_NPM_PACKAGES = new Set([
+const TOP_100_NPM_PACKAGES_SET = new Set([
   'react', 'vue', 'angular', 'jquery', 'lodash', 'express', 'webpack', 'babel',
   'typescript', 'eslint', 'prettier', 'jest', 'vitest', 'mocha', 'chai',
   'axios', 'fetch', 'node-fetch', 'qs', 'next', 'nuxt', 'svelte',
@@ -36,6 +36,9 @@ const TOP_100_NPM_PACKAGES = new Set([
   'sharp', 'jimp', 'canvas', 'puppeteer', 'playwright',
   'cheerio', 'jsdom', 'html-parser', 'xml2js',
 ]);
+
+// Pre-computed array to avoid Array.from() on every call
+const TOP_100_NPM_PACKAGES = Array.from(TOP_100_NPM_PACKAGES_SET);
 
 export function extractName(purl: string): string | undefined {
   try {
@@ -118,9 +121,13 @@ export function detectTyposquatting(purls: string[]): SupplyChainThreat[] {
     if (!name || !version || seen.has(name)) continue;
 
     const innerName = name.includes('/') ? name.split('/')[1]! : name;
+    const innerNameLower = innerName.toLowerCase();
 
-    for (const topPkg of Array.from(TOP_100_NPM_PACKAGES)) {
-      const distance = levenshteinDistance(innerName.toLowerCase(), topPkg.toLowerCase());
+    // Skip if package IS in the popular set (exact match, not a typo)
+    if (TOP_100_NPM_PACKAGES_SET.has(innerNameLower)) continue;
+
+    for (const topPkg of TOP_100_NPM_PACKAGES) {
+      const distance = levenshteinDistance(innerNameLower, topPkg.toLowerCase());
 
       if (distance <= 2 && distance > 0) {
         threats.push({
@@ -216,19 +223,23 @@ function estimatedDateFromDays(daysSince: number): string {
 function levenshteinDistance(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const dp = Array(m + 1)
-    .fill(null)
-    .map(() => Array(n + 1).fill(0));
 
-  for (let i = 0; i <= m; i++) dp[i]![0] = i;
-  for (let j = 0; j <= n; j++) dp[0]![j] = j;
+  // Fast reject: if length difference > 2, can't be within edit distance 1-2
+  if (Math.abs(m - n) > 2) return 99;
+
+  // Rolling-array implementation: O(m) space instead of O(m×n)
+  const prev = Array(n + 1).fill(0).map((_, i) => i);
+  const curr = Array(n + 1).fill(0);
 
   for (let i = 1; i <= m; i++) {
+    curr[0] = i;
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i]![j] = Math.min(dp[i - 1]![j]! + 1, dp[i]![j - 1]! + 1, dp[i - 1]![j - 1]! + cost);
+      curr[j] = Math.min(prev[j]! + 1, curr[j - 1]! + 1, prev[j - 1]! + cost);
     }
+    // Swap rows: prev becomes curr, and we reuse prev array
+    prev.splice(0, prev.length, ...curr);
   }
 
-  return dp[m]![n]!;
+  return prev[n]!;
 }

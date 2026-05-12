@@ -49,6 +49,29 @@ export class VulnStore {
       .toArray();
   }
 
+  /** Look up all advisories for multiple package names + ecosystem in one query. */
+  async findAdvisoriesBatch(packageNames: string[], ecosystem: string): Promise<VulnAdvisory[]> {
+    return this.advisories
+      .find({
+        packageName: { $in: packageNames.map((n) => n.toLowerCase()) },
+        ecosystem,
+      })
+      .project({
+        ranges: 1,
+        affectedVersions: 1,
+        fixVersion: 1,
+        cvss: 1,
+        cvssVector: 1,
+        cve: 1,
+        cwes: 1,
+        summary: 1,
+        packageName: 1,
+        ecosystem: 1,
+        id: 1,
+      })
+      .toArray();
+  }
+
   async getSyncState(ecosystem: string): Promise<SyncState | null> {
     return this.syncState.findOne({ ecosystem });
   }

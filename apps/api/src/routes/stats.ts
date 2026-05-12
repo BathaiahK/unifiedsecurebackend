@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { prisma } from '../db.js';
+import { prisma, mongoClient } from '../db.js';
 
 function computeScore(critical: number, high: number, medium: number): number {
   return Math.max(0, Math.min(100, Math.round(100 - critical * 8 - high * 2 - medium * 0.3)));
@@ -51,24 +51,79 @@ export const statsRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/api/trend', async (_req, reply) => {
     const now = new Date();
+    const db = mongoClient.db('uspservice');
+
+    // Single aggregation to fetch all findings grouped by month/severity
+    const pipeline = [
+      {
+        $match: {
+          firstSeen: {
+            $gte: new Date(now.getFullYear(), now.getMonth() - 5, 1),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: { $dateToString: { format: '%Y-%m', date: '$firstSeen' } },
+            severity: '$severity',
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ];
+
+    const raw = await db.collection('Finding').aggregate(pipeline).toArray();
+
+    // Reorganize into cumulative counts per month
+    const countsByMonth = new Map<
+      string,
+      { critical: number; high: number; medium: number }
+    >();
+
+    for (const doc of raw) {
+      const month = doc._id.month as string;
+      const severity = doc._id.severity as string;
+      const count = doc.count as number;
+
+      if (!countsByMonth.has(month)) {
+        countsByMonth.set(month, { critical: 0, high: 0, medium: 0 });
+      }
+      const monthData = countsByMonth.get(month)!;
+      if (severity === 'critical') monthData.critical = count;
+      else if (severity === 'high') monthData.high = count;
+      else if (severity === 'medium') monthData.medium = count;
+    }
+
+    // Build result with cumulative counts
     const trend = [];
+    let cumulativeCritical = 0;
+    let cumulativeHigh = 0;
+    let cumulativeMedium = 0;
 
     for (let i = 5; i >= 0; i--) {
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = month.toISOString().slice(0, 7);
 
-      const [crit, high, med] = await Promise.all([
-        prisma.finding.count({ where: { severity: 'critical', firstSeen: { lte: monthEnd } } }),
-        prisma.finding.count({ where: { severity: 'high',     firstSeen: { lte: monthEnd } } }),
-        prisma.finding.count({ where: { severity: 'medium',   firstSeen: { lte: monthEnd } } }),
-      ]);
+      const monthData = countsByMonth.get(monthStr) || {
+        critical: 0,
+        high: 0,
+        medium: 0,
+      };
+
+      cumulativeCritical += monthData.critical;
+      cumulativeHigh += monthData.high;
+      cumulativeMedium += monthData.medium;
 
       trend.push({
-        label:    new Date(now.getFullYear(), now.getMonth() - i, 1)
-                    .toLocaleString('en-US', { month: 'short' }),
-        critical: crit,
-        high,
-        medium:   med,
-        score:    computeScore(crit, high, med),
+        label: month.toLocaleString('en-US', { month: 'short' }),
+        critical: cumulativeCritical,
+        high: cumulativeHigh,
+        medium: cumulativeMedium,
+        score: computeScore(cumulativeCritical, cumulativeHigh, cumulativeMedium),
       });
     }
 

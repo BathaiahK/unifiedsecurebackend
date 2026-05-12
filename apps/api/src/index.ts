@@ -9,7 +9,6 @@ import { reportsRoutes } from './routes/reports.js';
 import { projectsRoutes } from './routes/projects.js';
 import { sbomRoutes } from './routes/sbom.js';
 import { registerAdapter } from './adapter-registry.js';
-import { BlackDuckAdapter } from '@usp/adapter-blackduck';
 import { SonatypeAdapter } from '@usp/adapter-sonatype';
 import { ScaAdapter } from '@usp/adapter-sca';
 import { GitHistoryAdapter } from '@usp/adapter-git-history';
@@ -20,6 +19,7 @@ import { ContainerAdapter } from '@usp/adapter-container';
 import { SupplyChainAdapter } from '@usp/adapter-supply-chain';
 import { MalwareAdapter } from '@usp/adapter-malware';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
+import { mongoClient } from './db.js';
 
 const apiConfig = getApiConfig();
 const scannerConfigs = getScannerConfigs();
@@ -49,15 +49,6 @@ await app.register(statsRoutes);
 await app.register(assetsRoutes);
 await app.register(reportsRoutes);
 await app.register(projectsRoutes);
-
-// BlackDuck: use real client when credentials are present, simulator otherwise
-const bdAdapter = new BlackDuckAdapter(scannerConfigs.blackduck ?? undefined);
-registerAdapter(bdAdapter);
-if (bdAdapter.isSimulated) {
-  app.log.warn('BlackDuck running in SIMULATION mode — add BLACKDUCK_URL + BLACKDUCK_API_TOKEN to .env for live scanning');
-} else {
-  app.log.info('BlackDuck adapter registered (live)');
-}
 
 // Sonatype: simulator when credentials absent, real OSS Index client when present
 const snAdapter = new SonatypeAdapter(
@@ -116,8 +107,15 @@ const malwareAdapter = new MalwareAdapter();
 registerAdapter(malwareAdapter);
 app.log.info('Malware adapter registered (code vulnerability scanner)');
 
-if (scannerConfigs.sysdig)   app.log.info('Sysdig adapter registered (stub)');
-if (scannerConfigs.crunch42) app.log.info('42Crunch adapter registered (stub)');
+if (scannerConfigs.sysdig)   app.log.info('Runtime Security adapter registered (stub)');
+
+// Pre-warm MongoDB connection pool
+try {
+  await mongoClient.connect();
+  app.log.info('MongoDB connection pool warmed');
+} catch (err) {
+  app.log.warn('Failed to pre-warm MongoDB connection:', err);
+}
 
 try {
   await app.listen({ port: apiConfig.port, host: apiConfig.host });

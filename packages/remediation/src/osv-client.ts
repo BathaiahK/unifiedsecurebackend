@@ -32,7 +32,16 @@ export interface OsvEnrichment {
   ecosystem: string | null;
 }
 
+const MAX_CACHE_SIZE = 2000;
 const cache = new Map<string, OsvEnrichment>();
+
+function cacheSet(cve: string, data: OsvEnrichment): void {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
+  }
+  cache.set(cve, data);
+}
 
 const isSemver = (v: string) => /^\d+\.\d/.test(v);
 
@@ -42,54 +51,61 @@ export async function enrichFromOsv(
 ): Promise<OsvEnrichment> {
   if (cache.has(cve)) return cache.get(cve)!;
 
-  const res = await fetch(`${baseUrl}/vulns/${encodeURIComponent(cve)}`);
+  try {
+    const res = await fetch(`${baseUrl}/vulns/${encodeURIComponent(cve)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return { fixVersion: null, advisoryUrls: [], ecosystem: null };
+    }
+
+    const parsed = OsvResponseSchema.safeParse(await res.json());
+    if (!parsed.success) return { fixVersion: null, advisoryUrls: [], ecosystem: null };
+
+    const allAffected = parsed.data.affected ?? [];
+
+    // Priority: SEMVER range type > ECOSYSTEM > GIT
+    const rangeTypePriority = (type: string) =>
+      type === 'SEMVER' ? 0 : type === 'ECOSYSTEM' ? 1 : 2;
+
+    let bestFixVersion: string | null = null;
+    let ecosystem: string | null = null;
+
+    for (const aff of allAffected) {
+      const sorted = [...(aff.ranges ?? [])].sort(
+        (a, b) => rangeTypePriority(a.type) - rangeTypePriority(b.type),
+      );
+      for (const range of sorted) {
+        // Check standard events first
+        const fixedFromEvents = range.events.find((e) => e.fixed !== undefined)?.fixed;
+        if (fixedFromEvents && isSemver(fixedFromEvents)) {
+          bestFixVersion = fixedFromEvents;
+          ecosystem = aff.package?.ecosystem ?? null;
+          break;
+        }
+        // Some OSV entries (e.g. GIT ranges for npm) store semver versions in database_specific.versions
+        const fixedFromDbSpecific = range.database_specific?.versions?.find(
+          (e) => e.fixed !== undefined,
+        )?.fixed;
+        if (fixedFromDbSpecific && isSemver(fixedFromDbSpecific)) {
+          bestFixVersion = fixedFromDbSpecific;
+          ecosystem = aff.package?.ecosystem ?? null;
+          break;
+        }
+      }
+      if (bestFixVersion) break;
+    }
+
+    const advisoryUrls = (parsed.data.references ?? [])
+      .filter((r) => r.type === 'ADVISORY' || r.type === 'FIX')
+      .map((r) => r.url);
+
+    const result: OsvEnrichment = { fixVersion: bestFixVersion, advisoryUrls, ecosystem };
+    cacheSet(cve, result);
+    return result;
+  } catch (err) {
+    console.warn(`Failed to enrich CVE ${cve} from OSV:`, err);
     return { fixVersion: null, advisoryUrls: [], ecosystem: null };
   }
-
-  const parsed = OsvResponseSchema.safeParse(await res.json());
-  if (!parsed.success) return { fixVersion: null, advisoryUrls: [], ecosystem: null };
-
-  const allAffected = parsed.data.affected ?? [];
-
-  // Priority: SEMVER range type > ECOSYSTEM > GIT
-  const rangeTypePriority = (type: string) =>
-    type === 'SEMVER' ? 0 : type === 'ECOSYSTEM' ? 1 : 2;
-
-  let bestFixVersion: string | null = null;
-  let ecosystem: string | null = null;
-
-  for (const aff of allAffected) {
-    const sorted = [...(aff.ranges ?? [])].sort(
-      (a, b) => rangeTypePriority(a.type) - rangeTypePriority(b.type),
-    );
-    for (const range of sorted) {
-      // Check standard events first
-      const fixedFromEvents = range.events.find((e) => e.fixed !== undefined)?.fixed;
-      if (fixedFromEvents && isSemver(fixedFromEvents)) {
-        bestFixVersion = fixedFromEvents;
-        ecosystem = aff.package?.ecosystem ?? null;
-        break;
-      }
-      // Some OSV entries (e.g. GIT ranges for npm) store semver versions in database_specific.versions
-      const fixedFromDbSpecific = range.database_specific?.versions?.find(
-        (e) => e.fixed !== undefined,
-      )?.fixed;
-      if (fixedFromDbSpecific && isSemver(fixedFromDbSpecific)) {
-        bestFixVersion = fixedFromDbSpecific;
-        ecosystem = aff.package?.ecosystem ?? null;
-        break;
-      }
-    }
-    if (bestFixVersion) break;
-  }
-
-  const advisoryUrls = (parsed.data.references ?? [])
-    .filter((r) => r.type === 'ADVISORY' || r.type === 'FIX')
-    .map((r) => r.url);
-
-  const result: OsvEnrichment = { fixVersion: bestFixVersion, advisoryUrls, ecosystem };
-  cache.set(cve, result);
-  return result;
 }

@@ -2,15 +2,15 @@ import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '../db.js';
 
 const TOOL_META: Record<string, { label: string; category: string }> = {
-  blackduck:  { label: 'BlackDuck',  category: 'SCA · open-source' },
+  sca:        { label: 'SCA',        category: 'SCA · open-source' },
   governance: { label: 'Package Governance', category: 'License & policy compliance' },
-  sysdig:     { label: 'Sysdig',     category: 'Container runtime' },
+  'runtime-security': { label: 'Runtime Security', category: 'Container runtime' },
   dast:       { label: 'DAST',       category: 'Dynamic app scan' },
-  '42crunch': { label: '42Crunch',   category: 'API security · OpenAPI' },
+  'api-security': { label: 'API Security', category: 'API security · OpenAPI' },
   container:  { label: 'Container Security', category: 'Image scanning & hardening' },
 };
 
-const ALL_TOOLS = ['blackduck', 'governance', 'sysdig', 'dast', '42crunch', 'container'];
+const ALL_TOOLS = ['sca', 'governance', 'runtime-security', 'dast', 'api-security', 'container'];
 
 export const assetsRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/assets — all unique assets with health derived from open findings
@@ -93,7 +93,7 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
         const stat = (label: string, value: string, highlight?: 'red' | 'orange' | 'green'): Stat =>
           highlight ? { label, value, highlight } : { label, value };
 
-        if (tool === 'blackduck') {
+        if (tool === 'sca') {
           stats = [
             stat('CVEs', critCount > 0 ? `${critCount} crit` : `${totalCount}`, critCount > 0 ? 'red' : undefined),
             stat('Pkgs', String(totalCount + 130)),
@@ -103,7 +103,7 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
             stat('Policy', highCount > 0 ? `${highCount} warn` : 'pass', highCount > 0 ? 'orange' : 'green'),
             stat('Cmps', String(totalCount + 80)),
           ];
-        } else if (tool === 'sysdig') {
+        } else if (tool === 'runtime-security') {
           stats = [
             stat('OS CVEs', String(totalCount), totalCount > 0 ? 'orange' : undefined),
           ];
@@ -112,7 +112,7 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
           stats = [
             stat('Alerts', xssFindings > 0 ? `XSS×${xssFindings}` : String(totalCount), xssFindings > 0 ? 'red' : undefined),
           ];
-        } else if (tool === '42crunch') {
+        } else if (tool === 'api-security') {
           const apiScore = Math.max(0, Math.min(100, Math.round(100 - totalCount * 6)));
           score = `${apiScore}/100`;
           stats = [

@@ -14,7 +14,5 @@ export const mongoClient =
   globalForPrisma.mongoClient ??
   new MongoClient(process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/uspservice?directConnection=true');
 
-if (process.env['NODE_ENV'] !== 'production') {
-  globalForPrisma.prisma = prisma;
-  globalForPrisma.mongoClient = mongoClient;
-}
+globalForPrisma.prisma = prisma;
+globalForPrisma.mongoClient = mongoClient;

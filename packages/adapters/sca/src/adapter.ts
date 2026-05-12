@@ -97,7 +97,6 @@ export class ScaAdapter implements ScannerAdapter {
     try {
       // Stage 1: Initialize (0%)
       scaStreamingQueue.progress(scanId, 'initializing', 0, 'parsing', 'Initializing scan...');
-      await sleep(100);
 
       // Stage 2: Vulnerability Lookup (50%)
       scaStreamingQueue.progress(
@@ -124,14 +123,19 @@ export class ScaAdapter implements ScannerAdapter {
         findingCount: findings.length,
       });
 
-      await sleep(200);
+      // Stage 3 & 4: License Analysis + Supply Chain Security (parallelized)
+      scaStreamingQueue.progress(scanId, 'running', 60, 'license-analysis', 'Analyzing licenses and supply chain...');
 
-      // Stage 3: License Analysis (75%)
-      scaStreamingQueue.progress(scanId, 'running', 60, 'license-analysis', 'Analyzing licenses...');
+      const [licenseAnalysis, supplyChainReport] = await Promise.all([
+        // License analysis
+        Promise.resolve().then(() => {
+          const sampleLicenses = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'GPL-2.0', 'Proprietary'];
+          return aggregateLicenseRisks(sampleLicenses);
+        }),
+        // Supply chain analysis
+        Promise.resolve().then(() => runSupplyChainAnalysis(pending.purls)),
+      ]);
 
-      // Simulate license analysis (in real scenario, would extract from manifests)
-      const sampleLicenses = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'GPL-2.0', 'Proprietary'];
-      const licenseAnalysis = aggregateLicenseRisks(sampleLicenses);
       pending.licenseRisks = {
         safe: licenseAnalysis.safe,
         warning: licenseAnalysis.warning,
@@ -139,33 +143,16 @@ export class ScaAdapter implements ScannerAdapter {
       };
 
       const licenseReport = generateLicenseReport(pending.licenseRisks);
-      scaStreamingQueue.progress(scanId, 'running', 75, 'license-analysis', 'License analysis complete', {
-        licenseRisks: pending.licenseRisks,
-      });
-
-      await sleep(200);
-
-      // Stage 4: Supply Chain Security (76–83%)
-      scaStreamingQueue.progress(
-        scanId,
-        'running',
-        76,
-        'supply-chain',
-        `Analyzing ${pending.purls.length} packages for supply chain threats...`,
-      );
-
-      const supplyChainReport = runSupplyChainAnalysis(pending.purls);
       pending.supplyChainReport = supplyChainReport;
 
-      scaStreamingQueue.progress(scanId, 'running', 83, 'supply-chain',
-        `Supply chain analysis: ${supplyChainReport.threats.length} threat(s) found`);
-
-      await sleep(150);
+      scaStreamingQueue.progress(scanId, 'running', 83, 'complete-analysis',
+        `Found ${supplyChainReport.threats.length} supply chain threat(s), analysis complete`, {
+          licenseRisks: pending.licenseRisks,
+          supplyChainThreats: supplyChainReport.threats.length,
+        });
 
       // Stage 5: Remediation & Summary (95%)
       scaStreamingQueue.progress(scanId, 'running', 85, 'remediation', 'Generating remediation plan...');
-
-      await sleep(100);
 
       // Stage 6: Complete (100%)
       scaStreamingQueue.progress(scanId, 'complete', 100, 'complete', 'Scan completed successfully', {
@@ -330,6 +317,3 @@ export class ScaAdapter implements ScannerAdapter {
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}

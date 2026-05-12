@@ -24,25 +24,44 @@ function parsePurl(purl: string): ParsedPurl | null {
 /**
  * Look up all advisories matching each purl in the local vuln-db.
  * Returns one VulnMatch per (purl, advisory) pair.
+ *
+ * Reduces N+1 queries → 1-2 queries by grouping PURLs by ecosystem and batching.
  */
 export async function lookupPurls(store: VulnStore, purls: string[]): Promise<VulnMatch[]> {
-  const matches: VulnMatch[] = [];
-
+  // Group PURLs by ecosystem
+  const byEcosystem = new Map<string, { purl: string; name: string; version: string }[]>();
   for (const purl of purls) {
     const parsed = parsePurl(purl);
     if (!parsed) continue;
+    if (!byEcosystem.has(parsed.ecosystem)) {
+      byEcosystem.set(parsed.ecosystem, []);
+    }
+    byEcosystem.get(parsed.ecosystem)!.push({
+      purl,
+      name: parsed.name,
+      version: parsed.version,
+    });
+  }
 
-    const advisories = await store.findAdvisories(parsed.name, parsed.ecosystem);
+  const matches: VulnMatch[] = [];
 
-    for (const advisory of advisories) {
-      if (isVersionAffected(parsed.version, advisory)) {
-        matches.push({
-          purl,
-          packageName: parsed.name,
-          version: parsed.version,
-          ecosystem: parsed.ecosystem,
-          advisory,
-        });
+  // One query per ecosystem (typically 1-2 ecosystems per repo)
+  for (const [ecosystem, packages] of byEcosystem) {
+    const names = [...new Set(packages.map((p) => p.name))];
+    const advisories = await store.findAdvisoriesBatch(names, ecosystem);
+
+    // Version-match in-memory
+    for (const pkg of packages) {
+      for (const advisory of advisories) {
+        if (advisory.packageName === pkg.name && isVersionAffected(pkg.version, advisory)) {
+          matches.push({
+            purl: pkg.purl,
+            packageName: pkg.name,
+            version: pkg.version,
+            ecosystem,
+            advisory,
+          });
+        }
       }
     }
   }

@@ -27,9 +27,9 @@ async function main() {
 
   // ── Scans (individual creates — no transaction needed) ────────────────────
   const scans = [
-    { id: SCAN.bdPayment,  tool: 'blackduck',  asset: 'payment-service', status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 45 * 60_000), critical: 2, high: 3, medium: 2, passedGate: false },
-    { id: SCAN.sysPayment, tool: 'sysdig',     asset: 'payment-service', status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 20 * 60_000), critical: 1, high: 0, medium: 0, passedGate: false },
-    { id: SCAN.crunchApi,  tool: '42crunch',   asset: 'api-gateway',     status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 10 * 60_000), critical: 0, high: 2, medium: 1, passedGate: true  },
+    { id: SCAN.bdPayment,  tool: 'sca',  asset: 'payment-service', status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 45 * 60_000), critical: 2, high: 3, medium: 2, passedGate: false },
+    { id: SCAN.sysPayment, tool: 'runtime-security',     asset: 'payment-service', status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 20 * 60_000), critical: 1, high: 0, medium: 0, passedGate: false },
+    { id: SCAN.crunchApi,  tool: 'api-security',   asset: 'api-gateway',     status: 'complete', startedAt: daysAgo(0), completedAt: new Date(now.getTime() - 10 * 60_000), critical: 0, high: 2, medium: 1, passedGate: true  },
     { id: SCAN.dastApi,    tool: 'dast',       asset: 'api-gateway',     status: 'complete', startedAt: daysAgo(1), completedAt: new Date(daysAgo(1).getTime() + 12 * 60_000), critical: 0, high: 1, medium: 0, passedGate: false },
     { id: SCAN.snAuth,     tool: 'governance', asset: 'auth-service',    status: 'complete', startedAt: daysAgo(1), completedAt: new Date(daysAgo(1).getTime() + 8  * 60_000), critical: 1, high: 1, medium: 1, passedGate: false },
     { id: SCAN.snPayment,  tool: 'governance', asset: 'payment-service', status: 'running',  startedAt: new Date(now.getTime() - 3 * 60_000), completedAt: null, critical: null, high: null, medium: null, passedGate: null },
@@ -40,7 +40,7 @@ async function main() {
   // ── Findings ──────────────────────────────────────────────────────────────
   const findings = [
     {
-      id: randomUUID(), tool: 'sysdig', severity: 'critical', cvss: 8.6,
+      id: randomUUID(), tool: 'runtime-security', severity: 'critical', cvss: 8.6,
       cve: 'CVE-2024-21626', cwe: 'CWE-22',
       title: 'runc container escape via /proc/self/fd',
       asset: 'payment-service', status: 'open', fixVersion: 'runc 1.1.12',
@@ -73,7 +73,7 @@ async function main() {
       evidence: { endpoint: '/api/search', parameter: 'q', confidence: 'High' },
     },
     {
-      id: randomUUID(), tool: '42crunch', severity: 'high', cvss: 7.5,
+      id: randomUUID(), tool: 'api-security', severity: 'high', cvss: 7.5,
       cve: null, cwe: 'CWE-285',
       title: 'No auth on DELETE /users/{id}',
       asset: 'api-gateway', status: 'open', fixVersion: null,
@@ -82,13 +82,13 @@ async function main() {
         'Add Bearer token authorization to DELETE /users/{id} in OpenAPI spec',
         'Enforce object-level authorization — verify caller owns the resource',
         'Add securityScheme to the operation in openapi.yaml',
-        'Run: npx @42crunch/api-security-audit --min-score 75',
+        'Run: npx api-security-audit --min-score 75',
       ],
       references: [{ label: 'OWASP API A1', url: 'https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/' }],
       evidence: { endpoint: 'DELETE /users/{id}', issue: 'Missing authorization', owaspApi: 'A1' },
     },
     {
-      id: randomUUID(), tool: 'blackduck', severity: 'critical', cvss: 7.5,
+      id: randomUUID(), tool: 'sca', severity: 'critical', cvss: 7.5,
       cve: 'CVE-2023-44487', cwe: 'CWE-400',
       title: 'HTTP/2 Rapid Reset Attack in nghttp2',
       asset: 'api-gateway', status: 'in_progress', fixVersion: 'nghttp2 1.57.0',
@@ -123,7 +123,7 @@ async function main() {
       evidence: { component: 'event-stream:3.3.6', ecosystem: 'npm', type: 'malicious-package' },
     },
     {
-      id: randomUUID(), tool: 'blackduck', severity: 'high', cvss: 7.8,
+      id: randomUUID(), tool: 'sca', severity: 'high', cvss: 7.8,
       cve: 'CVE-2021-44228', cwe: 'CWE-917',
       title: 'Log4Shell RCE in log4j-core',
       asset: 'payment-service', status: 'fixed', fixVersion: '2.17.1',
@@ -149,7 +149,7 @@ async function main() {
       evidence: { component: 'tough-cookie:2.5.0', ecosystem: 'npm' },
     },
     {
-      id: randomUUID(), tool: '42crunch', severity: 'medium', cvss: 5.0,
+      id: randomUUID(), tool: 'api-security', severity: 'medium', cvss: 5.0,
       cve: null, cwe: 'CWE-209',
       title: 'Stack trace exposed in 500 response',
       asset: 'api-gateway', status: 'open', fixVersion: null,

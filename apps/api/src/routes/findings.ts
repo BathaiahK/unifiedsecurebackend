@@ -57,6 +57,7 @@ export const findingsRoutes: FastifyPluginAsync = async (app) => {
       ? await prisma.finding.findMany({
           where: { cve: finding.cve, id: { not: finding.id } },
           select: { id: true, asset: true, severity: true, status: true, tool: true },
+          take: 50,
         })
       : [];
 

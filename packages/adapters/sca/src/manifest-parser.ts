@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
 export interface ParsedDependency {
@@ -10,14 +10,31 @@ export interface ParsedDependency {
 export async function parseDependencies(repoPath: string): Promise<string[]> {
   const purls: string[] = [];
 
-  // Parse package.json (npm/yarn/pnpm)
-  const packageJsonPath = join(repoPath, 'package.json');
-  if (existsSync(packageJsonPath)) {
-    try {
-      const content = readFileSync(packageJsonPath, 'utf-8');
-      const pkg = JSON.parse(content);
+  // Read all manifest files concurrently
+  const manifestPaths = {
+    packageJson: join(repoPath, 'package.json'),
+    requirements: join(repoPath, 'requirements.txt'),
+    pyproject: join(repoPath, 'pyproject.toml'),
+    gemfile: join(repoPath, 'Gemfile'),
+    gomod: join(repoPath, 'go.mod'),
+    pom: join(repoPath, 'pom.xml'),
+  };
 
-      // Extract direct dependencies
+  const results = await Promise.allSettled([
+    fs.readFile(manifestPaths.packageJson, 'utf-8'),
+    fs.readFile(manifestPaths.requirements, 'utf-8'),
+    fs.readFile(manifestPaths.pyproject, 'utf-8'),
+    fs.readFile(manifestPaths.gemfile, 'utf-8'),
+    fs.readFile(manifestPaths.gomod, 'utf-8'),
+    fs.readFile(manifestPaths.pom, 'utf-8'),
+  ]);
+
+  const [packageJsonResult, requirementsResult, pyprojectResult, gemfileResult, gomodResult, pomResult] = results;
+
+  // Parse package.json (npm/yarn/pnpm)
+  if (packageJsonResult.status === 'fulfilled') {
+    try {
+      const pkg = JSON.parse(packageJsonResult.value);
       const deps = { ...pkg.dependencies, ...pkg.devDependencies };
       for (const [name, version] of Object.entries(deps)) {
         const cleanVersion = extractVersionString(version as string);
@@ -29,12 +46,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   }
 
   // Parse requirements.txt (Python pip)
-  const requirementsPath = join(repoPath, 'requirements.txt');
-  if (existsSync(requirementsPath)) {
+  if (requirementsResult.status === 'fulfilled') {
     try {
-      const content = readFileSync(requirementsPath, 'utf-8');
-      const lines = content.split('\n');
-
+      const lines = requirementsResult.value.split('\n');
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith('#')) continue;
@@ -52,10 +66,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   }
 
   // Parse pyproject.toml (Python poetry/pipenv)
-  const pyprojectPath = join(repoPath, 'pyproject.toml');
-  if (existsSync(pyprojectPath)) {
+  if (pyprojectResult.status === 'fulfilled') {
     try {
-      const content = readFileSync(pyprojectPath, 'utf-8');
+      const content = pyprojectResult.value;
       const depMatch = content.match(/\[tool\.poetry\.dependencies\]([\s\S]*?)(?:\[|$)/);
 
       if (depMatch) {
@@ -80,12 +93,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   }
 
   // Parse Gemfile (Ruby)
-  const gemfilePath = join(repoPath, 'Gemfile');
-  if (existsSync(gemfilePath)) {
+  if (gemfileResult.status === 'fulfilled') {
     try {
-      const content = readFileSync(gemfilePath, 'utf-8');
-      const lines = content.split('\n');
-
+      const lines = gemfileResult.value.split('\n');
       for (const line of lines) {
         const match = line.match(/^\s*gem\s+['"]([a-zA-Z0-9\-_.]+)['"]\s*(?:,\s*['"]([^'"]+)['"])?/);
         if (match) {
@@ -100,11 +110,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   }
 
   // Parse go.mod (Go)
-  const gomodPath = join(repoPath, 'go.mod');
-  if (existsSync(gomodPath)) {
+  if (gomodResult.status === 'fulfilled') {
     try {
-      const content = readFileSync(gomodPath, 'utf-8');
-      const lines = content.split('\n');
+      const lines = gomodResult.value.split('\n');
       let inRequire = false;
 
       for (const line of lines) {
@@ -139,10 +147,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   }
 
   // Parse pom.xml (Maven/Java)
-  const pomPath = join(repoPath, 'pom.xml');
-  if (existsSync(pomPath)) {
+  if (pomResult.status === 'fulfilled') {
     try {
-      const content = readFileSync(pomPath, 'utf-8');
+      const content = pomResult.value;
       const depMatches = content.matchAll(/<dependency>\s*<groupId>([^<]+)<\/groupId>\s*<artifactId>([^<]+)<\/artifactId>\s*<version>([^<]+)<\/version>/g);
 
       for (const match of depMatches) {

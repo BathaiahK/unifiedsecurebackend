@@ -97,6 +97,9 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       // Ignore errors in subscription setup, fall back to polling
     }
 
+    let delay = 500;
+    const MAX_DELAY = 5000;
+
     const poll = async (): Promise<void> => {
       if (closed) return;
       try {
@@ -114,7 +117,10 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
           res.end();
           return;
         }
-        if (!closed) setTimeout(() => { poll().catch(() => res.end()); }, 2000);
+        if (!closed) {
+          setTimeout(() => { poll().catch(() => res.end()); }, delay);
+          delay = Math.min(delay * 1.5, MAX_DELAY);
+        }
       } catch {
         res.end();
       }

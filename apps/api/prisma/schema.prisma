@@ -24,6 +24,9 @@ model Scan {
   @@index([tool, asset])
   @@index([status])
   @@index([startedAt])
+  @@index([tool, startedAt])
+  @@index([tool, asset, status, startedAt])
+  @@index([asset])
 }
 
 model Finding {
@@ -53,6 +56,12 @@ model Finding {
   @@index([status])
   @@index([scanId])
   @@index([firstSeen])
+  @@index([lastSeen])
+  @@index([severity, status])
+  @@index([severity, status, lastSeen])
+  @@index([severity, status, firstSeen])
+  @@index([severity, firstSeen])
+  @@index([asset, severity, status])
 }
 
 model ReportDownload {
