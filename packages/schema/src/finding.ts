@@ -11,6 +11,7 @@ export const ToolSchema = z.enum([
   'container',
   'supply-chain',
   'malware',
+  'sonatype',
 ]);
 export type Tool = z.infer<typeof ToolSchema>;
 
