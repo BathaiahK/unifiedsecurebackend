@@ -100,8 +100,7 @@ jobs:
             --platform managed \
             --region ${{ env.GCP_REGION }} \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }} \
-            --clear-env-vars \
-            --set-env-vars NODE_ENV=production,LOG_LEVEL=warn,ENVIRONMENT=production \
+            --update-env-vars NODE_ENV=production,LOG_LEVEL=warn,ENVIRONMENT=production \
             --set-secrets DATABASE_URL=DATABASE_URL:latest \
             --memory 512Mi \
             --cpu 1 \
