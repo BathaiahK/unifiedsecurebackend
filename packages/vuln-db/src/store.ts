@@ -65,11 +65,13 @@ export class VulnStore {
         cve: 1,
         cwes: 1,
         summary: 1,
+        references: 1,
+        modifiedAt: 1,
         packageName: 1,
         ecosystem: 1,
         id: 1,
       })
-      .toArray();
+      .toArray() as Promise<VulnAdvisory[]>;
   }
 
   async getSyncState(ecosystem: string): Promise<SyncState | null> {
