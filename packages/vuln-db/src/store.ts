@@ -44,9 +44,7 @@ export class VulnStore {
 
   /** Look up all advisories for a package name + ecosystem. */
   async findAdvisories(packageName: string, ecosystem: string): Promise<VulnAdvisory[]> {
-    return this.advisories
-      .find({ packageName: packageName.toLowerCase(), ecosystem })
-      .toArray();
+    return this.advisories.find({ packageName: packageName.toLowerCase(), ecosystem }).toArray();
   }
 
   /** Look up all advisories for multiple package names + ecosystem in one query. */

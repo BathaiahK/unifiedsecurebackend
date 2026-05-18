@@ -3,6 +3,7 @@
 ## Current Architecture Analysis
 
 ### What Exists Today
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         SCA Pipeline                             │
@@ -52,14 +53,16 @@
 ```
 
 ### Current Strengths
+
 ✅ Offline-first: No external API calls (OSV data is pre-synced)  
 ✅ Multi-ecosystem support: npm, PyPI, Maven, Go, cargo, gem, nuget  
 ✅ Semver-aware: Understands version ranges, not just exact matches  
 ✅ Real-time: Local MongoDB, immediate results  
 ✅ Rich evidence: Full OSV advisory data preserved  
-✅ Ecosystem-specific fixes: Commands tailored to package manager  
+✅ Ecosystem-specific fixes: Commands tailored to package manager
 
 ### Current Gaps / Enhancement Opportunities
+
 ❌ No license risk analysis (only vulnerability)  
 ❌ No transitive dependency tracking (only direct deps)  
 ❌ No dependency tree analysis  
@@ -67,16 +70,18 @@
 ❌ No deprecated package detection  
 ❌ No SBOM generation  
 ❌ No real-time status updates (completes instantly)  
-❌ Limited remediation guidance (just version bumps)  
+❌ Limited remediation guidance (just version bumps)
 
 ---
 
 ## Enhanced SCA Engine - Implementation Plan
 
 ### Phase 1: Real-Time Streaming & Enhanced Detection (Immediate)
+
 **Goal**: Add real-time progress reporting + license analysis + transitive deps
 
 #### 1.1 Real-Time Scan Progress
+
 - Convert instant completion → simulated scan stages
 - Emit progress events: "parsing manifests" → "looking up advisories" → "generating fixes"
 - Benefits: Better UX, matches other scanners' workflow
@@ -85,31 +90,32 @@
 trigger() {
   scanId = generate()
   emit(scanId, "initializing", progress: 0%)
-  
+
   // Stage 1: Parse manifests
   emit(scanId, "running", progress: 25%, stage: "parsing")
   manifests = extractManifests(repo)
   purls = generatePurls(manifests)
-  
-  // Stage 2: Lookup vulnerabilities  
+
+  // Stage 2: Lookup vulnerabilities
   emit(scanId, "running", progress: 50%, stage: "vulnerability-lookup")
   matches = queryVulnDb(purls)
-  
+
   // Stage 3: License analysis
   emit(scanId, "running", progress: 75%, stage: "license-analysis")
   licenses = extractLicenses(manifests)
   risks = analyzeLicenseRisks(licenses)
-  
+
   // Stage 4: Remediation generation
   emit(scanId, "running", progress: 90%, stage: "remediation")
   fixes = generateRemediationPlan(matches)
-  
+
   // Complete
   emit(scanId, "complete", progress: 100%)
 }
 ```
 
 #### 1.2 Transitive Dependency Tracking
+
 ```
 Instead of just:
   express 4.18.0 → vulnerability
@@ -119,7 +125,7 @@ Track:
     ├── body-parser@1.20.0 (has vuln)
     ├── cookie@0.5.0
     └── ... (100+ transitive)
-    
+
 Report as:
   - Direct: express itself (0 vulns)
   - Transitive: body-parser (1 critical)
@@ -127,25 +133,27 @@ Report as:
 ```
 
 #### 1.3 License Risk Analysis
+
 ```
 Per dependency:
   lodash@4.17.21 → MIT (safe)
   some-proprietary@1.0.0 → Commercial (risk: GPL copyleft)
-  
+
 Aggregate:
   Permissive licenses: 89
   Copyleft (GPL, AGPL): 3 ⚠️
   Proprietary: 1 ⚠️
   Unknown: 2 ⚠️
-  
+
 Recommendation: License violations if using in proprietary product
 ```
 
 #### 1.4 Enhanced Version Recommendations
+
 ```
 Current:
   express@4.18.0 → "upgrade to 4.18.2"
-  
+
 Enhanced:
   express@4.18.0
     ├─ Critical vuln in body-parser@1.20.0
@@ -161,9 +169,11 @@ Enhanced:
 ---
 
 ### Phase 2: Supply Chain Security (Week 2)
+
 **Goal**: Detect typosquatting, suspicious packages, unmaintained deps
 
 #### 2.1 Package Metadata Inspection
+
 ```
 For each package, collect:
   - Published date range (old = potentially unmaintained)
@@ -171,7 +181,7 @@ For each package, collect:
   - Author/maintainer info (compare to npm registry)
   - Repository health: stars, open issues, last commit date
   - License: verify it matches declared
-  
+
 Flags:
   ⚠️ UNMAINTAINED: No release in >2 years
   🚩 TYPOSQUATTING: Similar name to popular pkg
@@ -180,6 +190,7 @@ Flags:
 ```
 
 #### 2.2 Dependency Tree Visualization
+
 ```
 Export dependency graph:
   {
@@ -192,16 +203,18 @@ Export dependency graph:
       }
     }
   }
-  
+
 UI Benefit: Visual dep graph, click to see vuln context
 ```
 
 ---
 
 ### Phase 3: SBOM Generation (Week 3)
+
 **Goal**: Generate CycloneDX / SPDX BOMs for compliance
 
 #### 3.1 SBOM Output
+
 ```
 Format: CycloneDX 1.4 / SPDX 2.3
 
@@ -211,7 +224,7 @@ Includes:
   - License info per component
   - Known vulnerabilities at scan time
   - Component metadata (purl, homepage, etc)
-  
+
 Use cases:
   - Legal compliance (vendor assessment)
   - Incident response (quick lookup of affected versions)
@@ -223,6 +236,7 @@ Use cases:
 ## Implementation Timeline & Files
 
 ### Immediate (Phase 1) — Real-Time + License
+
 ```
 packages/adapters/sca/src/
 ├── adapter.ts                      (✏️ add progress events)
@@ -244,6 +258,7 @@ Test:
 ```
 
 ### Week 2 (Phase 2) — Supply Chain
+
 ```
 packages/adapters/sca/src/
 ├── package-metadata-inspector.ts   (✨ new: fetch pkg registry metadata)
@@ -252,6 +267,7 @@ packages/adapters/sca/src/
 ```
 
 ### Week 3 (Phase 3) — SBOM
+
 ```
 packages/adapters/sca/src/
 ├── sbom-generator.ts               (✨ new: CycloneDX/SPDX output)
@@ -326,13 +342,13 @@ interface ScanProgressEvent {
   progress: number; // 0-100
   stage?: 'parsing' | 'vulnerability-lookup' | 'license-analysis' | 'remediation' | 'sbom';
   message?: string;
-  
+
   // Intermediate results (sent as we go)
   manifestCount?: number;
   dependencyCount?: number;
   findingCount?: number;
   licenseRisks?: { critical: number; high: number; medium: number };
-  
+
   error?: string;
 }
 ```
@@ -346,7 +362,7 @@ interface ScanProgressEvent {
 ✅ **License visibility**: Orgs can assess compliance risk  
 ✅ **Smart remediation**: Not just "bump version" but "understand impact"  
 ✅ **SBOM compliance**: Can pass vendor security assessments  
-✅ **Supply chain awareness**: Flag suspicious/unmaintained pkgs  
+✅ **Supply chain awareness**: Flag suspicious/unmaintained pkgs
 
 ---
 
@@ -357,4 +373,3 @@ interface ScanProgressEvent {
 3. **Transitive-aware fixes** — Reduce false positives from indirect deps
 4. **License DB approach** — Use SPDX license list + custom risk mapping
 5. **SBOM format** — CycloneDX (de facto standard) + SPDX (compliance)
-

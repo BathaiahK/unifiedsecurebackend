@@ -5,7 +5,14 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { simpleGit } from 'simple-git';
-import { SECRET_PATTERNS, SKIP_PATHS, KNOWN_FALSE_POSITIVES, shouldSkipPath, calculateEntropy, type SecretCategory } from './patterns.js';
+import {
+  SECRET_PATTERNS,
+  SKIP_PATHS,
+  KNOWN_FALSE_POSITIVES,
+  shouldSkipPath,
+  calculateEntropy,
+  type SecretCategory,
+} from './patterns.js';
 
 export interface ScanOptions {
   repoUrl: string;
@@ -88,10 +95,14 @@ export async function scanRepository(opts: ScanOptions): Promise<RawSecret[]> {
 
     let processed = 0;
 
-    const child = spawn('git', ['log', '-p', '--all', '--format=COMMIT:%H %ae %an %aI', '--no-merges'], {
-      cwd: cloneDir,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const child = spawn(
+      'git',
+      ['log', '-p', '--all', '--format=COMMIT:%H %ae %an %aI', '--no-merges'],
+      {
+        cwd: cloneDir,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
 
     const rl = createInterface({
       input: child.stdout,
@@ -174,8 +185,8 @@ export async function scanRepository(opts: ScanOptions): Promise<RawSecret[]> {
 
         // Keyword pre-filter
         const lineLower = addedLine.toLowerCase();
-        const matchingPatterns = SECRET_PATTERNS.filter(pattern =>
-          pattern.keywords.some(keyword => lineLower.includes(keyword))
+        const matchingPatterns = SECRET_PATTERNS.filter((pattern) =>
+          pattern.keywords.some((keyword) => lineLower.includes(keyword)),
         );
 
         // Run patterns
@@ -206,7 +217,7 @@ export async function scanRepository(opts: ScanOptions): Promise<RawSecret[]> {
           seen.add(dedupeKey);
 
           // Build context (with secrets stripped)
-          const contextLines = contextBuffer.slice().map(line => {
+          const contextLines = contextBuffer.slice().map((line) => {
             // Redact any secrets from context
             for (const p of SECRET_PATTERNS) {
               line = line.replace(p.regex, '[REDACTED]');

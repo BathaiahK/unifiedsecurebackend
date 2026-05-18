@@ -37,8 +37,16 @@ export function cvssBaseScore(vector: string): number | null {
   const i = CIA[m['I'] ?? ''];
   const a = CIA[m['A'] ?? ''];
 
-  if (av === undefined || ac === undefined || pr === undefined || ui === undefined ||
-      c === undefined || i === undefined || a === undefined) return null;
+  if (
+    av === undefined ||
+    ac === undefined ||
+    pr === undefined ||
+    ui === undefined ||
+    c === undefined ||
+    i === undefined ||
+    a === undefined
+  )
+    return null;
 
   const iss = 1 - (1 - c) * (1 - i) * (1 - a);
   let impact: number;

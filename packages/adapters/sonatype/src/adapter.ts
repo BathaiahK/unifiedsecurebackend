@@ -6,12 +6,16 @@ import {
   type SonatypeScanMode,
 } from './client.js';
 import { SonatypeSimulator } from './simulator.js';
-import { normalizeComponent, normalizeQualityRisk, normalizeSupplyChainThreat } from './normalize.js';
+import {
+  normalizeComponent,
+  normalizeQualityRisk,
+  normalizeSupplyChainThreat,
+} from './normalize.js';
 
 export interface SonatypeAdapterConfig {
-  url?: string;       // Reserved for Nexus IQ (commercial) base URL — unused for OSS Index
-  username?: string;  // OSS Index username (email)
-  token?: string;     // OSS Index user token
+  url?: string; // Reserved for Nexus IQ (commercial) base URL — unused for OSS Index
+  username?: string; // OSS Index username (email)
+  token?: string; // OSS Index user token
 }
 
 // ── Backend interface (duck-typed so simulator and real client are swappable) ─
@@ -207,12 +211,18 @@ function buildReportFromComponents(
     if (c.licenseId) {
       if (/^GPL/i.test(c.licenseId) || /^AGPL/i.test(c.licenseId)) {
         licenseViolations.push({
-          component: name, version, licenseId: c.licenseId, risk: 'HIGH',
+          component: name,
+          version,
+          licenseId: c.licenseId,
+          risk: 'HIGH',
           reason: `${c.licenseId} is a copyleft licence that may require disclosure of proprietary source code.`,
         });
       } else if (/^LGPL/i.test(c.licenseId)) {
         licenseViolations.push({
-          component: name, version, licenseId: c.licenseId, risk: 'MEDIUM',
+          component: name,
+          version,
+          licenseId: c.licenseId,
+          risk: 'MEDIUM',
           reason: `${c.licenseId} is a weak copyleft licence — dynamic linking may trigger disclosure obligations.`,
         });
       }
@@ -220,7 +230,9 @@ function buildReportFromComponents(
 
     if (c.qualityRisk?.isAbandoned) {
       qualityRisks.push({
-        component: name, version, risk: 'abandoned',
+        component: name,
+        version,
+        risk: 'abandoned',
         detail: `No releases in ${c.qualityRisk.daysStale ?? '?'} days.`,
       });
     }
@@ -280,4 +292,3 @@ function extractVersion(purl: string): string {
   const atIdx = purl.lastIndexOf('@');
   return atIdx === -1 ? 'unknown' : purl.slice(atIdx + 1);
 }
-

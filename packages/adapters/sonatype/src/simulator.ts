@@ -79,7 +79,8 @@ function mkVuln(
 const DEPENDENCY_COMPONENTS: SonatypeComponent[] = [
   {
     coordinates: 'pkg:npm/lodash@4.17.20',
-    description: 'Lodash modular utilities — a modern JavaScript utility library delivering modularity, performance, & extras.',
+    description:
+      'Lodash modular utilities — a modern JavaScript utility library delivering modularity, performance, & extras.',
     reference: 'https://ossindex.sonatype.org/component/pkg:npm/lodash@4.17.20',
     detectionType: 'dependency',
     licenseId: 'MIT',
@@ -99,7 +100,10 @@ const DEPENDENCY_COMPONENTS: SonatypeComponent[] = [
         'CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H',
         'CWE-77',
         'https://ossindex.sonatype.org/vulnerability/CVE-2021-23337',
-        ['https://nvd.nist.gov/vuln/detail/CVE-2021-23337', 'https://github.com/lodash/lodash/blob/master/CHANGELOG.md'],
+        [
+          'https://nvd.nist.gov/vuln/detail/CVE-2021-23337',
+          'https://github.com/lodash/lodash/blob/master/CHANGELOG.md',
+        ],
       ),
     ],
   },
@@ -296,7 +300,8 @@ const DEPENDENCY_COMPONENTS: SonatypeComponent[] = [
   {
     // Quality risk only — no CVE. Abandoned package with a copyleft licence.
     coordinates: 'pkg:npm/mysql2@2.3.3',
-    description: 'fast mysql driver. Implements core protocol, prepared statements, ssl and compression in native JS.',
+    description:
+      'fast mysql driver. Implements core protocol, prepared statements, ssl and compression in native JS.',
     reference: 'https://ossindex.sonatype.org/component/pkg:npm/mysql2@2.3.3',
     detectionType: 'dependency',
     licenseId: 'GPL-2.0-only',
@@ -341,8 +346,10 @@ const DEPENDENCY_COMPONENTS: SonatypeComponent[] = [
 const BINARY_COMPONENTS: SonatypeComponent[] = [
   {
     coordinates: 'pkg:maven/org.apache.struts/struts2-core@2.5.26',
-    description: 'Apache Struts 2 — a popular MVC framework for creating enterprise-ready Java web applications.',
-    reference: 'https://ossindex.sonatype.org/component/pkg:maven/org.apache.struts/struts2-core@2.5.26',
+    description:
+      'Apache Struts 2 — a popular MVC framework for creating enterprise-ready Java web applications.',
+    reference:
+      'https://ossindex.sonatype.org/component/pkg:maven/org.apache.struts/struts2-core@2.5.26',
     detectionType: 'binary',
     licenseId: 'Apache-2.0',
     licenseRisk: 'LOW',
@@ -361,7 +368,10 @@ const BINARY_COMPONENTS: SonatypeComponent[] = [
         'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
         'CWE-22',
         'https://ossindex.sonatype.org/vulnerability/CVE-2023-50164',
-        ['https://nvd.nist.gov/vuln/detail/CVE-2023-50164', 'https://lists.apache.org/thread/yh09b3fkf6vz5d6jdgrlvmg60lfwtqhj'],
+        [
+          'https://nvd.nist.gov/vuln/detail/CVE-2023-50164',
+          'https://lists.apache.org/thread/yh09b3fkf6vz5d6jdgrlvmg60lfwtqhj',
+        ],
       ),
     ],
   },
@@ -388,7 +398,10 @@ const BINARY_COMPONENTS: SonatypeComponent[] = [
         'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
         'CWE-94',
         'https://ossindex.sonatype.org/vulnerability/CVE-2022-42889',
-        ['https://nvd.nist.gov/vuln/detail/CVE-2022-42889', 'https://seclists.org/oss-sec/2022/q4/22'],
+        [
+          'https://nvd.nist.gov/vuln/detail/CVE-2022-42889',
+          'https://seclists.org/oss-sec/2022/q4/22',
+        ],
       ),
     ],
   },
@@ -426,7 +439,8 @@ const BINARY_COMPONENTS: SonatypeComponent[] = [
 const CONTAINER_COMPONENTS: SonatypeComponent[] = [
   {
     coordinates: 'pkg:deb/debian/libc6@2.31',
-    description: 'GNU C Library: Shared libraries — contains the standard C library and the standard math library.',
+    description:
+      'GNU C Library: Shared libraries — contains the standard C library and the standard math library.',
     reference: 'https://ossindex.sonatype.org/component/pkg:deb/debian/libc6@2.31',
     detectionType: 'binary',
     licenseId: 'LGPL-2.1-only',
@@ -473,7 +487,10 @@ const CONTAINER_COMPONENTS: SonatypeComponent[] = [
         'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
         'CWE-835',
         'https://ossindex.sonatype.org/vulnerability/CVE-2022-0778',
-        ['https://nvd.nist.gov/vuln/detail/CVE-2022-0778', 'https://www.openssl.org/news/secadv/20220315.txt'],
+        [
+          'https://nvd.nist.gov/vuln/detail/CVE-2022-0778',
+          'https://www.openssl.org/news/secadv/20220315.txt',
+        ],
       ),
     ],
   },
@@ -591,10 +608,7 @@ export class SonatypeSimulator {
    * @param _purls   Ignored in simulation — we return our hardcoded dataset.
    * @param scanMode Controls how many components (and detectionTypes) are returned.
    */
-  evaluateComponents(
-    _purls: string[],
-    scanMode: SonatypeScanMode,
-  ): Promise<SonatypeComponent[]> {
+  evaluateComponents(_purls: string[], scanMode: SonatypeScanMode): Promise<SonatypeComponent[]> {
     const components: SonatypeComponent[] = [...DEPENDENCY_COMPONENTS];
 
     if (scanMode === 'binary' || scanMode === 'container') {
@@ -620,15 +634,10 @@ export class SonatypeSimulator {
     const allComponents = [...components, ...CLEAN_COMPONENTS];
     const totalComponents = allComponents.length;
 
-    const vulnerableComponents = components.filter(
-      (c) => c.vulnerabilities.length > 0,
-    ).length;
+    const vulnerableComponents = components.filter((c) => c.vulnerabilities.length > 0).length;
 
     // Every vulnerability is a policy violation in this context
-    const policyViolations = components.reduce(
-      (sum, c) => sum + c.vulnerabilities.length,
-      0,
-    );
+    const policyViolations = components.reduce((sum, c) => sum + c.vulnerabilities.length, 0);
 
     // License violations: GPL = HIGH risk, LGPL = MEDIUM risk
     const licenseViolations: ApplicationReport['licenseViolations'] = [];

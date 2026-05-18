@@ -129,7 +129,8 @@ export function generateHardeningRecommendations(
     recommendations.push({
       category: 'user',
       title: 'Run as Non-root User',
-      description: 'Create and use a dedicated non-root user. Add to Dockerfile: RUN useradd -m appuser && USER appuser',
+      description:
+        'Create and use a dedicated non-root user. Add to Dockerfile: RUN useradd -m appuser && USER appuser',
       severity: 'HIGH',
     });
   }
@@ -139,7 +140,8 @@ export function generateHardeningRecommendations(
     recommendations.push({
       category: 'readonly',
       title: 'Enable Read-only Root Filesystem',
-      description: 'Set read-only root filesystem. Add to docker run: --read-only --tmpfs /tmp --tmpfs /var/run',
+      description:
+        'Set read-only root filesystem. Add to docker run: --read-only --tmpfs /tmp --tmpfs /var/run',
       severity: 'MEDIUM',
     });
   }
@@ -148,7 +150,8 @@ export function generateHardeningRecommendations(
   recommendations.push({
     category: 'capabilities',
     title: 'Drop Unnecessary Capabilities',
-    description: 'Reduce attack surface by dropping all capabilities. Add to docker run: --cap-drop ALL --cap-add NET_BIND_SERVICE',
+    description:
+      'Reduce attack surface by dropping all capabilities. Add to docker run: --cap-drop ALL --cap-add NET_BIND_SERVICE',
     severity: 'MEDIUM',
   });
 

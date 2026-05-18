@@ -21,7 +21,7 @@ export function extractPurls(files: FetchedFile[]): string[] {
   const purls = new Set<string>();
 
   const npmLockFiles = new Set(['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']);
-  const hasNpmLock   = files.some((f) => npmLockFiles.has(f.path));
+  const hasNpmLock = files.some((f) => npmLockFiles.has(f.path));
 
   for (const file of files) {
     // Skip package.json when a more precise npm lock file is present
@@ -29,17 +29,39 @@ export function extractPurls(files: FetchedFile[]): string[] {
 
     try {
       switch (file.path) {
-        case 'package-lock.json': extractPackageLock(file.content, purls); break;
-        case 'yarn.lock':         extractYarnLock(file.content, purls);    break;
-        case 'pnpm-lock.yaml':    extractPnpmLock(file.content, purls);    break;
-        case 'package.json':      extractPackageJson(file.content, purls); break;
-        case 'pom.xml':           extractPomXml(file.content, purls);      break;
-        case 'build.gradle':      extractGradle(file.content, purls);      break;
-        case 'requirements.txt':  extractRequirements(file.content, purls);break;
-        case 'Pipfile.lock':      extractPipfileLock(file.content, purls); break;
-        case 'go.sum':            extractGoSum(file.content, purls);       break;
-        case 'Gemfile.lock':      extractGemfileLock(file.content, purls); break;
-        case 'Cargo.lock':        extractCargoLock(file.content, purls);   break;
+        case 'package-lock.json':
+          extractPackageLock(file.content, purls);
+          break;
+        case 'yarn.lock':
+          extractYarnLock(file.content, purls);
+          break;
+        case 'pnpm-lock.yaml':
+          extractPnpmLock(file.content, purls);
+          break;
+        case 'package.json':
+          extractPackageJson(file.content, purls);
+          break;
+        case 'pom.xml':
+          extractPomXml(file.content, purls);
+          break;
+        case 'build.gradle':
+          extractGradle(file.content, purls);
+          break;
+        case 'requirements.txt':
+          extractRequirements(file.content, purls);
+          break;
+        case 'Pipfile.lock':
+          extractPipfileLock(file.content, purls);
+          break;
+        case 'go.sum':
+          extractGoSum(file.content, purls);
+          break;
+        case 'Gemfile.lock':
+          extractGemfileLock(file.content, purls);
+          break;
+        case 'Cargo.lock':
+          extractCargoLock(file.content, purls);
+          break;
       }
     } catch {
       // Malformed file — skip and continue with others
@@ -63,7 +85,7 @@ function extractPackageLock(content: string, purls: Set<string>) {
       // Split on "node_modules/" (no leading slash) so top-level entries are also handled.
       // Last segment after the final "node_modules/" occurrence is the actual package name.
       const segments = key.split('node_modules/');
-      const raw  = segments[segments.length - 1] ?? '';
+      const raw = segments[segments.length - 1] ?? '';
       // Decode percent-encoding: some npm versions write %40scope instead of @scope
       const name = decodeURIComponent(raw);
       if (name && pkg.version) {
@@ -100,7 +122,12 @@ function extractYarnLock(content: string, purls: Set<string>) {
     if (line.startsWith('#') || line.trim() === '' || line.startsWith('__metadata')) continue;
 
     // Package header — not indented, ends with ":", contains "@"
-    if (!line.startsWith(' ') && !line.startsWith('\t') && line.endsWith(':') && line.includes('@')) {
+    if (
+      !line.startsWith(' ') &&
+      !line.startsWith('\t') &&
+      line.endsWith(':') &&
+      line.includes('@')
+    ) {
       pendingNames = parseYarnHeader(line);
       continue;
     }
@@ -125,7 +152,10 @@ function parseYarnHeader(line: string): string[] {
   const names = new Set<string>();
 
   for (const part of line.split(', ')) {
-    const cleaned = part.replace(/^["']|["':]*\s*$/g, '').replace(/@npm:/, '@').trim();
+    const cleaned = part
+      .replace(/^["']|["':]*\s*$/g, '')
+      .replace(/@npm:/, '@')
+      .trim();
     // Find the version-separating @ — skip index 0 because scoped packages start with @
     const atIdx = cleaned.indexOf('@', 1);
     if (atIdx === -1) continue;
@@ -149,12 +179,14 @@ function extractPnpmLock(content: string, purls: Set<string>) {
 function extractPackageJson(content: string, purls: Set<string>) {
   const pkg = JSON.parse(content) as Record<string, unknown>;
   const deps = {
-    ...(pkg['dependencies']    as Record<string, string> | undefined ?? {}),
-    ...(pkg['devDependencies'] as Record<string, string> | undefined ?? {}),
+    ...((pkg['dependencies'] as Record<string, string> | undefined) ?? {}),
+    ...((pkg['devDependencies'] as Record<string, string> | undefined) ?? {}),
   };
   for (const [name, range] of Object.entries(deps)) {
     // Strip common range prefixes: ^ ~ >= > = to get a bare version
-    const version = String(range).replace(/^[\^~>=<*]+/, '').trim();
+    const version = String(range)
+      .replace(/^[\^~>=<*]+/, '')
+      .trim();
     if (version && /^\d/.test(version) && !version.includes(' ')) {
       purls.add(`pkg:npm/${name}@${version}`);
     }
@@ -166,9 +198,9 @@ function extractPackageJson(content: string, purls: Set<string>) {
 function extractPomXml(content: string, purls: Set<string>) {
   const depBlocks = content.match(/<dependency>[\s\S]*?<\/dependency>/g) ?? [];
   for (const block of depBlocks) {
-    const groupId    = block.match(/<groupId>([^<]+)<\/groupId>/)?.[1]?.trim();
+    const groupId = block.match(/<groupId>([^<]+)<\/groupId>/)?.[1]?.trim();
     const artifactId = block.match(/<artifactId>([^<]+)<\/artifactId>/)?.[1]?.trim();
-    const version    = block.match(/<version>([^<${}]+)<\/version>/)?.[1]?.trim();
+    const version = block.match(/<version>([^<${}]+)<\/version>/)?.[1]?.trim();
     if (groupId && artifactId && version && /^\d/.test(version)) {
       purls.add(`pkg:maven/${groupId}/${artifactId}@${version}`);
     }
@@ -259,7 +291,7 @@ function extractCargoLock(content: string, purls: Set<string>) {
   // TOML format: [[package]] blocks with name = "..." and version = "..."
   const blocks = content.split(/\[\[package\]\]/);
   for (const block of blocks) {
-    const name    = block.match(/name\s*=\s*"([^"]+)"/)?.[1];
+    const name = block.match(/name\s*=\s*"([^"]+)"/)?.[1];
     const version = block.match(/version\s*=\s*"([^"]+)"/)?.[1];
     if (name && version) {
       purls.add(`pkg:cargo/${name}@${version}`);

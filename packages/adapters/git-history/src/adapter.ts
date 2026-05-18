@@ -37,7 +37,7 @@ export class GitHistoryAdapter implements ScannerAdapter {
 
   constructor() {
     // Cleanup orphaned temp directories on startup
-    cleanupOrphanedTempDirs().catch(err => {
+    cleanupOrphanedTempDirs().catch((err) => {
       console.warn('[git-history] Failed to cleanup orphaned temp directories:', err);
     });
   }
@@ -67,7 +67,7 @@ export class GitHistoryAdapter implements ScannerAdapter {
     this.pendingScans.set(scanId, pending);
 
     // Fire-and-forget async scan
-    this._runScan(scanId, pending, config).catch(err => {
+    this._runScan(scanId, pending, config).catch((err) => {
       pending.error = String(err);
       pending.findings = []; // Mark as complete so polling doesn't hang
       console.error(`[git-history:${scanId}] Scan failed:`, err);
@@ -81,7 +81,7 @@ export class GitHistoryAdapter implements ScannerAdapter {
       // If no repo URL, use simulated findings for demo mode
       if (!pending.repoUrl) {
         const rawSecrets = generateSimulatedFindings(config.asset);
-        pending.findings = rawSecrets.map(raw => normalizeRawSecret(raw, config.asset, scanId));
+        pending.findings = rawSecrets.map((raw) => normalizeRawSecret(raw, config.asset, scanId));
         pending.total = 1;
         pending.processed = 1;
         return;
@@ -99,7 +99,7 @@ export class GitHistoryAdapter implements ScannerAdapter {
         },
       });
 
-      pending.findings = rawSecrets.map(raw => normalizeRawSecret(raw, config.asset, scanId));
+      pending.findings = rawSecrets.map((raw) => normalizeRawSecret(raw, config.asset, scanId));
       pending.total = Math.max(1, pending.total);
       pending.processed = pending.total;
     } finally {
@@ -127,8 +127,7 @@ export class GitHistoryAdapter implements ScannerAdapter {
     }
 
     // Running state with progress
-    const progress =
-      pending.total > 0 ? Math.round((pending.processed / pending.total) * 100) : 5; // Show 5% while cloning
+    const progress = pending.total > 0 ? Math.round((pending.processed / pending.total) * 100) : 5; // Show 5% while cloning
     return { status: 'running', progress };
   }
 
@@ -155,8 +154,12 @@ export class GitHistoryAdapter implements ScannerAdapter {
     let newestDate = '1970-01-01T00:00:00Z';
 
     for (const finding of pending.findings) {
-      const commitDate = (finding.evidence as Record<string, unknown>)['commitDate'] as string | undefined;
-      const category = (finding.evidence as Record<string, unknown>)['secretCategory'] as string | undefined;
+      const commitDate = (finding.evidence as Record<string, unknown>)['commitDate'] as
+        | string
+        | undefined;
+      const category = (finding.evidence as Record<string, unknown>)['secretCategory'] as
+        | string
+        | undefined;
 
       if (category) {
         secretsByCategory[category] = (secretsByCategory[category] ?? 0) + 1;
@@ -167,11 +170,15 @@ export class GitHistoryAdapter implements ScannerAdapter {
       if (commitDate) {
         if (commitDate < oldestDate) {
           oldestDate = commitDate;
-          oldestCommit = (finding.evidence as Record<string, unknown>)['commitHash'] as string | undefined ?? null;
+          oldestCommit =
+            ((finding.evidence as Record<string, unknown>)['commitHash'] as string | undefined) ??
+            null;
         }
         if (commitDate > newestDate) {
           newestDate = commitDate;
-          newestCommit = (finding.evidence as Record<string, unknown>)['commitHash'] as string | undefined ?? null;
+          newestCommit =
+            ((finding.evidence as Record<string, unknown>)['commitHash'] as string | undefined) ??
+            null;
         }
       }
     }

@@ -9,16 +9,15 @@ export function isVersionAffected(version: string, advisory: VulnAdvisory): bool
 
   // Check semver ranges [introduced, fixed)
   for (const range of advisory.ranges) {
-    const introduced = range.introduced === '0' || range.introduced === '' ? null : range.introduced;
+    const introduced =
+      range.introduced === '0' || range.introduced === '' ? null : range.introduced;
     const fixed = range.fixed;
 
     const afterIntroduced = introduced
       ? semver.gte(v, semver.coerce(introduced)?.version ?? introduced)
       : true;
 
-    const beforeFixed = fixed
-      ? semver.lt(v, semver.coerce(fixed)?.version ?? fixed)
-      : true;
+    const beforeFixed = fixed ? semver.lt(v, semver.coerce(fixed)?.version ?? fixed) : true;
 
     if (afterIntroduced && beforeFixed) return true;
   }

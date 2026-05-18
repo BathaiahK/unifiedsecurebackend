@@ -2,7 +2,11 @@ import type { ScannerAdapter, ScanConfig, ScanStatus, UnifiedFinding } from '@us
 import { getVulnStore, lookupPurls, type VulnStore } from '@usp/vuln-db';
 import { normalizeMatch } from './normalize.js';
 import { scaStreamingQueue } from './streaming-queue.js';
-import { analyzeLicenseRisk, aggregateLicenseRisks, generateLicenseReport } from './license-analyzer.js';
+import {
+  analyzeLicenseRisk,
+  aggregateLicenseRisks,
+  generateLicenseReport,
+} from './license-analyzer.js';
 import { runSupplyChainAnalysis } from './supply-chain-detector.js';
 import { parseDependencies, generateSimulatedPurls } from './manifest-parser.js';
 import type { TransitiveDependency, SupplyChainReport } from './types.js';
@@ -113,18 +117,34 @@ export class ScaAdapter implements ScannerAdapter {
       let findings = matches.map((m) => normalizeMatch(m, config.asset, scanId));
 
       // Fallback: If no vulnerabilities found and we're using simulated PURLs, generate demo findings
-      if (findings.length === 0 && pending.purls.some(p => p.includes('@babel') || p.includes('react'))) {
+      if (
+        findings.length === 0 &&
+        pending.purls.some((p) => p.includes('@babel') || p.includes('react'))
+      ) {
         findings = this.generateDemoFindings(pending.purls, config.asset, scanId);
       }
 
       pending.findings = findings;
 
-      scaStreamingQueue.progress(scanId, 'running', 50, 'vulnerability-lookup', `Found ${findings.length} vulnerabilities`, {
-        findingCount: findings.length,
-      });
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        50,
+        'vulnerability-lookup',
+        `Found ${findings.length} vulnerabilities`,
+        {
+          findingCount: findings.length,
+        },
+      );
 
       // Stage 3 & 4: License Analysis + Supply Chain Security (parallelized)
-      scaStreamingQueue.progress(scanId, 'running', 60, 'license-analysis', 'Analyzing licenses and supply chain...');
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        60,
+        'license-analysis',
+        'Analyzing licenses and supply chain...',
+      );
 
       const [licenseAnalysis, supplyChainReport] = await Promise.all([
         // License analysis
@@ -145,20 +165,39 @@ export class ScaAdapter implements ScannerAdapter {
       const licenseReport = generateLicenseReport(pending.licenseRisks);
       pending.supplyChainReport = supplyChainReport;
 
-      scaStreamingQueue.progress(scanId, 'running', 83, 'complete-analysis',
-        `Found ${supplyChainReport.threats.length} supply chain threat(s), analysis complete`, {
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        83,
+        'complete-analysis',
+        `Found ${supplyChainReport.threats.length} supply chain threat(s), analysis complete`,
+        {
           licenseRisks: pending.licenseRisks,
           supplyChainThreats: supplyChainReport.threats.length,
-        });
+        },
+      );
 
       // Stage 5: Remediation & Summary (95%)
-      scaStreamingQueue.progress(scanId, 'running', 85, 'remediation', 'Generating remediation plan...');
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        85,
+        'remediation',
+        'Generating remediation plan...',
+      );
 
       // Stage 6: Complete (100%)
-      scaStreamingQueue.progress(scanId, 'complete', 100, 'complete', 'Scan completed successfully', {
-        findingCount: findings.length,
-        licenseRisks: pending.licenseRisks,
-      });
+      scaStreamingQueue.progress(
+        scanId,
+        'complete',
+        100,
+        'complete',
+        'Scan completed successfully',
+        {
+          findingCount: findings.length,
+          licenseRisks: pending.licenseRisks,
+        },
+      );
     } catch (err) {
       scaStreamingQueue.emit({
         scanId,
@@ -172,23 +211,18 @@ export class ScaAdapter implements ScannerAdapter {
   }
 
   private generateDemoFindings(purls: string[], asset: string, scanId: string): UnifiedFinding[] {
-    const demoVulnerabilities: Record<string, Array<{ cve: string; severity: string; cvss: number }>> = {
-      '@babel/core': [
-        { cve: 'CVE-2024-22210', severity: 'high', cvss: 7.5 },
-      ],
-      '@babel/types': [
-        { cve: 'CVE-2024-22210', severity: 'high', cvss: 7.5 },
-      ],
-      react: [
-        { cve: 'CVE-2023-46805', severity: 'medium', cvss: 6.1 },
-      ],
+    const demoVulnerabilities: Record<
+      string,
+      Array<{ cve: string; severity: string; cvss: number }>
+    > = {
+      '@babel/core': [{ cve: 'CVE-2024-22210', severity: 'high', cvss: 7.5 }],
+      '@babel/types': [{ cve: 'CVE-2024-22210', severity: 'high', cvss: 7.5 }],
+      react: [{ cve: 'CVE-2023-46805', severity: 'medium', cvss: 6.1 }],
       lodash: [
         { cve: 'CVE-2021-23337', severity: 'high', cvss: 7.2 },
         { cve: 'CVE-2019-10744', severity: 'medium', cvss: 6.1 },
       ],
-      express: [
-        { cve: 'CVE-2022-24999', severity: 'high', cvss: 7.5 },
-      ],
+      express: [{ cve: 'CVE-2022-24999', severity: 'high', cvss: 7.5 }],
     };
 
     const findings: UnifiedFinding[] = [];
@@ -316,4 +350,3 @@ export class ScaAdapter implements ScannerAdapter {
     return this.pendingScans.get(scanId)?.supplyChainReport ?? null;
   }
 }
-

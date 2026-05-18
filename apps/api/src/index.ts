@@ -27,13 +27,14 @@ const scannerConfigs = getScannerConfigs();
 const app = Fastify({ logger: { level: apiConfig.logLevel } });
 
 await app.register(cors, {
-  origin: apiConfig.nodeEnv === 'production'
-    ? apiConfig.corsOrigin
-    : (origin, cb) => {
-        // Allow all localhost origins in development
-        if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
-        cb(new Error('CORS: origin not allowed'), false);
-      },
+  origin:
+    apiConfig.nodeEnv === 'production'
+      ? apiConfig.corsOrigin
+      : (origin, cb) => {
+          // Allow all localhost origins in development
+          if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
+          cb(new Error('CORS: origin not allowed'), false);
+        },
 });
 
 app.get('/health', async () => ({
@@ -58,7 +59,9 @@ const snAdapter = new SonatypeAdapter(
 );
 registerAdapter(snAdapter);
 if (snAdapter.isSimulated) {
-  app.log.warn('Sonatype running in SIMULATION mode — add SONATYPE_USERNAME + SONATYPE_TOKEN to .env for live OSS Index scanning');
+  app.log.warn(
+    'Sonatype running in SIMULATION mode — add SONATYPE_USERNAME + SONATYPE_TOKEN to .env for live OSS Index scanning',
+  );
 } else {
   app.log.info('Sonatype adapter registered (OSS Index live)');
 }
@@ -92,7 +95,9 @@ app.log.info('API Security adapter registered (OpenAPI validation & auto-discove
 const containerAdapter = new ContainerAdapter(scannerConfigs.container ?? undefined);
 registerAdapter(containerAdapter);
 if (containerAdapter.isSimulated) {
-  app.log.warn('Container Security running in SIMULATION mode — install Trivy or set TRIVY_PATH env var for live scanning');
+  app.log.warn(
+    'Container Security running in SIMULATION mode — install Trivy or set TRIVY_PATH env var for live scanning',
+  );
 } else {
   app.log.info('Container Security adapter registered (live Trivy scanning)');
 }
@@ -100,14 +105,16 @@ if (containerAdapter.isSimulated) {
 // Supply Chain: detects typosquatting, dependency confusion, unmaintained packages
 const supplyChainAdapter = new SupplyChainAdapter();
 registerAdapter(supplyChainAdapter);
-app.log.info('Supply Chain adapter registered (typosquatting, dependency confusion, unmaintained packages)');
+app.log.info(
+  'Supply Chain adapter registered (typosquatting, dependency confusion, unmaintained packages)',
+);
 
 // Malware: detects obfuscated code, credential harvesting, suspicious patterns
 const malwareAdapter = new MalwareAdapter();
 registerAdapter(malwareAdapter);
 app.log.info('Malware adapter registered (code vulnerability scanner)');
 
-if (scannerConfigs.sysdig)   app.log.info('Runtime Security adapter registered (stub)');
+if (scannerConfigs.sysdig) app.log.info('Runtime Security adapter registered (stub)');
 
 // Pre-warm MongoDB connection pool
 try {

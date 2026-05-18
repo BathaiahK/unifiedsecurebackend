@@ -40,7 +40,9 @@ export const sbomRoutes: FastifyPluginAsync = async (app) => {
 
     // For container scans, try to use the Trivy CycloneDX SBOM first
     if (tool === 'container' && format === 'cyclonedx') {
-      const containerSbom = (scan.meta as Record<string, unknown> | undefined)?.containerSbom as Record<string, unknown> | undefined;
+      const containerSbom = (scan.meta as Record<string, unknown> | undefined)?.containerSbom as
+        | Record<string, unknown>
+        | undefined;
       if (containerSbom) {
         const filename = `sbom-${id.slice(0, 8)}-cdx.json`;
         reply

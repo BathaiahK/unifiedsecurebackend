@@ -58,11 +58,13 @@ export const ScannerStatusSchema = z.object({
   label: z.string(),
   category: z.string(),
   status: z.enum(['active', 'scanning', 'offline', 'error']),
-  stats: z.array(z.object({
-    label: z.string(),
-    value: z.string(),
-    highlight: z.enum(['red', 'orange', 'green']).optional(),
-  })),
+  stats: z.array(
+    z.object({
+      label: z.string(),
+      value: z.string(),
+      highlight: z.enum(['red', 'orange', 'green']).optional(),
+    }),
+  ),
   score: z.string().optional(),
 });
 export type ScannerStatus = z.infer<typeof ScannerStatusSchema>;

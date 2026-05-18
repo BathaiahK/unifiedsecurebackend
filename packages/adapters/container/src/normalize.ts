@@ -1,6 +1,12 @@
 import { randomUUID } from 'crypto';
 import type { UnifiedFinding } from '@usp/schema';
-import type { TrivyMisconfiguration, TrivyResult, TrivySecret, TrivyVulnerability, EpssEntry } from './types.js';
+import type {
+  TrivyMisconfiguration,
+  TrivyResult,
+  TrivySecret,
+  TrivyVulnerability,
+  EpssEntry,
+} from './types.js';
 
 export function normalizeContainerFindings(
   results: TrivyResult[],

@@ -29,7 +29,14 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
     fs.readFile(manifestPaths.pom, 'utf-8'),
   ]);
 
-  const [packageJsonResult, requirementsResult, pyprojectResult, gemfileResult, gomodResult, pomResult] = results;
+  const [
+    packageJsonResult,
+    requirementsResult,
+    pyprojectResult,
+    gemfileResult,
+    gomodResult,
+    pomResult,
+  ] = results;
 
   // Parse package.json (npm/yarn/pnpm)
   if (packageJsonResult.status === 'fulfilled') {
@@ -97,7 +104,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
     try {
       const lines = gemfileResult.value.split('\n');
       for (const line of lines) {
-        const match = line.match(/^\s*gem\s+['"]([a-zA-Z0-9\-_.]+)['"]\s*(?:,\s*['"]([^'"]+)['"])?/);
+        const match = line.match(
+          /^\s*gem\s+['"]([a-zA-Z0-9\-_.]+)['"]\s*(?:,\s*['"]([^'"]+)['"])?/,
+        );
         if (match) {
           const name = match[1];
           const version = match[2] || '*';
@@ -150,7 +159,9 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
   if (pomResult.status === 'fulfilled') {
     try {
       const content = pomResult.value;
-      const depMatches = content.matchAll(/<dependency>\s*<groupId>([^<]+)<\/groupId>\s*<artifactId>([^<]+)<\/artifactId>\s*<version>([^<]+)<\/version>/g);
+      const depMatches = content.matchAll(
+        /<dependency>\s*<groupId>([^<]+)<\/groupId>\s*<artifactId>([^<]+)<\/artifactId>\s*<version>([^<]+)<\/version>/g,
+      );
 
       for (const match of depMatches) {
         const groupId = match[1];

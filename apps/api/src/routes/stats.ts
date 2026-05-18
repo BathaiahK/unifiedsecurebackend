@@ -32,20 +32,20 @@ export const statsRoutes: FastifyPluginAsync = async (app) => {
     );
 
     const criticalOpen = (bySeverity['critical'] as number) ?? 0;
-    const highOpen     = (bySeverity['high']     as number) ?? 0;
-    const mediumOpen   = (bySeverity['medium']   as number) ?? 0;
+    const highOpen = (bySeverity['high'] as number) ?? 0;
+    const mediumOpen = (bySeverity['medium'] as number) ?? 0;
 
     return reply.send({
       total,
       bySeverity,
-      byTool:   Object.fromEntries(
+      byTool: Object.fromEntries(
         byToolRaw.map((r: GroupRow & { tool: string }) => [r.tool, r._count.id]),
       ),
       byStatus,
       securityScore: computeScore(criticalOpen, highOpen, mediumOpen),
       criticalDelta: newCritical,
-      highDelta:     -fixedHigh,
-      mediumDelta:   mediumOpen > 10 ? 'needs attention' : 'stable',
+      highDelta: -fixedHigh,
+      mediumDelta: mediumOpen > 10 ? 'needs attention' : 'stable',
     });
   });
 
@@ -79,10 +79,7 @@ export const statsRoutes: FastifyPluginAsync = async (app) => {
     const raw = await db.collection('Finding').aggregate(pipeline).toArray();
 
     // Reorganize into cumulative counts per month
-    const countsByMonth = new Map<
-      string,
-      { critical: number; high: number; medium: number }
-    >();
+    const countsByMonth = new Map<string, { critical: number; high: number; medium: number }>();
 
     for (const doc of raw) {
       const month = doc._id.month as string;

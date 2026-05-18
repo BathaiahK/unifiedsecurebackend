@@ -13,7 +13,7 @@ function createFinding(
   method: string,
   evidence: string,
   remediation: string[],
-  payload?: string
+  payload?: string,
 ): DastFinding {
   return {
     id: randomUUID(),
@@ -32,7 +32,7 @@ function createFinding(
 
 export async function probeSecurityHeaders(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding[] | null> {
   try {
     const controller = new AbortController();
@@ -67,8 +67,8 @@ export async function probeSecurityHeaders(
             [
               `Add ${name} header to HTTP responses`,
               'Configure your web server or application framework to include this header',
-            ]
-          )
+            ],
+          ),
         );
       }
     }
@@ -81,7 +81,7 @@ export async function probeSecurityHeaders(
 
 export async function probeSqlInjection(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const payloads = ["'", "1' OR '1'='1", "admin' --", "' UNION SELECT NULL --"];
@@ -120,7 +120,7 @@ export async function probeSqlInjection(
             'Validate and sanitize all user inputs',
             'Apply principle of least privilege to database accounts',
           ],
-          payloads[0]
+          payloads[0],
         );
       }
     }
@@ -133,7 +133,7 @@ export async function probeSqlInjection(
 
 export async function probeXssReflection(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const payload = '<script>alert(1)</script>';
@@ -164,7 +164,7 @@ export async function probeXssReflection(
           'Validate and sanitize all inputs',
           'Use security-focused templating engines',
         ],
-        payload
+        payload,
       );
     }
 
@@ -176,7 +176,7 @@ export async function probeXssReflection(
 
 export async function probeOpenRedirect(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const evilDomain = 'http://evil.example.com/malicious';
@@ -210,7 +210,7 @@ export async function probeOpenRedirect(
             'Avoid using user-supplied input directly in redirects',
             'Use relative URLs when possible',
           ],
-          evilDomain
+          evilDomain,
         );
       }
     }
@@ -223,7 +223,7 @@ export async function probeOpenRedirect(
 
 export async function probePathTraversal(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const paths = [
@@ -262,7 +262,7 @@ export async function probePathTraversal(
             'Serve files from a restricted directory only',
             'Never include user input directly in file paths',
           ],
-          path
+          path,
         );
       }
     }
@@ -275,7 +275,7 @@ export async function probePathTraversal(
 
 export async function probeSensitiveFiles(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding[] | null> {
   try {
     const sensitiveFiles = [
@@ -316,8 +316,8 @@ export async function probeSensitiveFiles(
                 'Store configuration in environment variables, not files',
                 'Use .gitignore to prevent committing sensitive files',
               ],
-              path
-            )
+              path,
+            ),
           );
         }
       }
@@ -331,7 +331,7 @@ export async function probeSensitiveFiles(
 
 export async function probeInfoDisclosure(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding[] | null> {
   try {
     const findings: DastFinding[] = [];
@@ -359,8 +359,8 @@ export async function probeInfoDisclosure(
             'Customize or hide the Server header',
             'Remove version information from HTTP headers',
             'Configure web server to not reveal version details',
-          ]
-        )
+          ],
+        ),
       );
     }
 
@@ -391,8 +391,8 @@ export async function probeInfoDisclosure(
             'Log detailed errors server-side only',
             'Implement custom error handling pages',
             'Disable debug mode in production',
-          ]
-        )
+          ],
+        ),
       );
     }
 
@@ -404,7 +404,7 @@ export async function probeInfoDisclosure(
 
 export async function probeCorsConfig(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const evilOrigin = 'http://evil.example.com';
@@ -437,7 +437,7 @@ export async function probeCorsConfig(
           'Avoid combining wildcard origin with credentials',
           'Validate all cross-origin requests',
         ],
-        evilOrigin
+        evilOrigin,
       );
     }
 
@@ -449,7 +449,7 @@ export async function probeCorsConfig(
 
 export async function probeRateLimiting(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding | null> {
   try {
     const promises = [];
@@ -482,7 +482,7 @@ export async function probeRateLimiting(
           'Return 429 Too Many Requests when limit exceeded',
           'Use libraries like express-rate-limit or similar',
           'Set reasonable limits based on API usage patterns',
-        ]
+        ],
       );
     }
 
@@ -494,7 +494,7 @@ export async function probeRateLimiting(
 
 export async function probeCookieSecurity(
   targetUrl: string,
-  counter: RequestCounter
+  counter: RequestCounter,
 ): Promise<DastFinding[] | null> {
   try {
     const controller = new AbortController();
@@ -527,8 +527,8 @@ export async function probeCookieSecurity(
               'Enforce HTTPS-only connections',
               'Set Secure flag in Set-Cookie headers',
             ],
-            setCookie
-          )
+            setCookie,
+          ),
         );
       }
 
@@ -548,8 +548,8 @@ export async function probeCookieSecurity(
               'Prevent JavaScript access to session cookies',
               'Set HttpOnly flag in Set-Cookie headers',
             ],
-            setCookie
-          )
+            setCookie,
+          ),
         );
       }
 
@@ -569,8 +569,8 @@ export async function probeCookieSecurity(
               'Prevent cookies from being sent in cross-site requests',
               'Set SameSite flag in Set-Cookie headers',
             ],
-            setCookie
-          )
+            setCookie,
+          ),
         );
       }
     }

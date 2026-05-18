@@ -11,11 +11,7 @@ function severityFromCvss(cvss: number | null): UnifiedFinding['severity'] {
   return 'info';
 }
 
-export function normalizeMatch(
-  match: VulnMatch,
-  asset: string,
-  scanId: string,
-): UnifiedFinding {
+export function normalizeMatch(match: VulnMatch, asset: string, scanId: string): UnifiedFinding {
   const { advisory } = match;
   const now = new Date().toISOString();
 

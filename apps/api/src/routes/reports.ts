@@ -52,8 +52,11 @@ export const reportsRoutes: FastifyPluginAsync = async (app) => {
     if (!template) return reply.status(404).send({ error: 'Template not found' });
 
     const month = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
-    const name  = `${template.title} — ${month}`;
-    const size  = format === 'PDF' ? `${Math.floor(Math.random() * 100 + 80)} KB` : `${Math.floor(Math.random() * 50 + 30)} KB`;
+    const name = `${template.title} — ${month}`;
+    const size =
+      format === 'PDF'
+        ? `${Math.floor(Math.random() * 100 + 80)} KB`
+        : `${Math.floor(Math.random() * 50 + 30)} KB`;
 
     const record = await prisma.reportDownload.create({
       data: { id: randomUUID(), name, format, size },

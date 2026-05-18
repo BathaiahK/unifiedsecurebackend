@@ -9,9 +9,7 @@ const OsvRangeSchema = z.object({
   type: z.string(),
   events: z.array(VersionEventSchema),
   // Some databases embed semver versions inside database_specific.versions when type=GIT
-  database_specific: z
-    .object({ versions: z.array(VersionEventSchema).optional() })
-    .optional(),
+  database_specific: z.object({ versions: z.array(VersionEventSchema).optional() }).optional(),
 });
 
 const OsvAffectedSchema = z.object({

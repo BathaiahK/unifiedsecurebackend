@@ -46,17 +46,17 @@ OSV_API_URL=https://api.osv.dev/v1
 
 ## API surface
 
-| Method | Path | Description |
-|---|---|---|
-| GET | /health | Liveness + configured adapters |
-| GET | /api/findings | Paginated findings (filter: tool, severity, status, asset, cve) |
-| GET | /api/findings/:id | Single finding with full evidence |
-| POST | /api/scans | Trigger a scan |
-| GET | /api/scans | Recent scan history |
-| GET | /api/scans/:id | Scan status |
-| GET | /api/scans/:id/diff | Diff vs previous scan for same asset |
-| GET | /api/stats | Aggregate counts by severity/tool/status |
-| GET | /api/assets | All known asset names |
+| Method | Path                | Description                                                     |
+| ------ | ------------------- | --------------------------------------------------------------- |
+| GET    | /health             | Liveness + configured adapters                                  |
+| GET    | /api/findings       | Paginated findings (filter: tool, severity, status, asset, cve) |
+| GET    | /api/findings/:id   | Single finding with full evidence                               |
+| POST   | /api/scans          | Trigger a scan                                                  |
+| GET    | /api/scans          | Recent scan history                                             |
+| GET    | /api/scans/:id      | Scan status                                                     |
+| GET    | /api/scans/:id/diff | Diff vs previous scan for same asset                            |
+| GET    | /api/stats          | Aggregate counts by severity/tool/status                        |
+| GET    | /api/assets         | All known asset names                                           |
 
 ## Scanner adapter interface
 

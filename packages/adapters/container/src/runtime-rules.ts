@@ -155,7 +155,7 @@ export function evaluateRules(context: ImageContext): RuntimeThreat[] {
 
   // RULE-008: Crypto Mining Indicator
   const miningBinaries = ['xmrig', 'minerd', 'cgminer', 'bfgminer', 'cpuminer'];
-  if (miningBinaries.some(bin => context.installedPackages.some(pkg => pkg.includes(bin)))) {
+  if (miningBinaries.some((bin) => context.installedPackages.some((pkg) => pkg.includes(bin)))) {
     threats.push({
       ruleId: 'RULE-008',
       ruleName: 'Crypto Mining Indicator',

@@ -31,22 +31,22 @@ export async function fetchEpssScores(cves: string[]): Promise<Map<string, EpssE
   }
 
   // Fetch uncached CVEs
-  const uncached = cves.filter(cve => !result.has(cve));
+  const uncached = cves.filter((cve) => !result.has(cve));
   if (uncached.length === 0) return result;
 
   const chunks = chunk(uncached, 10);
 
   try {
     const responses = await Promise.all(
-      chunks.map(cveChunk =>
-        fetch(`https://api.first.org/data/v1/epss?cve=${cveChunk.join(',')}`).catch(() => null)
-      )
+      chunks.map((cveChunk) =>
+        fetch(`https://api.first.org/data/v1/epss?cve=${cveChunk.join(',')}`).catch(() => null),
+      ),
     );
 
     for (const response of responses) {
       if (!response || !response.ok) continue;
 
-      const rawData = await response.json() as any;
+      const rawData = (await response.json()) as any;
       if (rawData.data && Array.isArray(rawData.data)) {
         for (const entry of rawData.data) {
           const epssEntry: EpssEntry = {
@@ -80,12 +80,12 @@ export async function fetchKevCatalog(): Promise<Set<string>> {
 
   try {
     const response = await fetch(
-      'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json'
+      'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json',
     );
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const rawData = await response.json() as any;
+    const rawData = (await response.json()) as any;
     if (rawData.vulnerabilities && Array.isArray(rawData.vulnerabilities)) {
       for (const vuln of rawData.vulnerabilities) {
         if (vuln.cveID) {
@@ -96,7 +96,9 @@ export async function fetchKevCatalog(): Promise<Set<string>> {
 
     kevCacheData = { data: result, expiry: now + KEV_CACHE_TTL_MS };
   } catch (error) {
-    console.warn(`[CISA KEV] Fetch error: ${error instanceof Error ? error.message : 'unknown error'}`);
+    console.warn(
+      `[CISA KEV] Fetch error: ${error instanceof Error ? error.message : 'unknown error'}`,
+    );
   }
 
   return result;

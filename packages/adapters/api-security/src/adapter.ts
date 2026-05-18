@@ -18,7 +18,9 @@ export class ApiSecurityAdapter implements ScannerAdapter {
 
   async trigger(config: ScanConfig): Promise<{ scanId: string }> {
     const scanId = `api-security-${Date.now()}-${randomUUID().slice(0, 8)}`;
-    const serviceUrl = ((config.options?.serviceUrl as string | undefined) ?? 'http://localhost:4000').replace(/\/$/, '');
+    const serviceUrl = (
+      (config.options?.serviceUrl as string | undefined) ?? 'http://localhost:4000'
+    ).replace(/\/$/, '');
     const specUrl = config.options?.specUrl as string | undefined;
 
     const report: ApiSecurityReport = {
@@ -56,29 +58,32 @@ export class ApiSecurityAdapter implements ScannerAdapter {
     const scan = this.pendingScans.get(scanId);
     if (!scan || scan.report.findings.length === 0) return [];
 
-    return scan.report.findings.map((f) => ({
-      id: randomUUID(),
-      tool: 'api-security' as const,
-      severity: f.severity,
-      cvss: null,
-      cve: null,
-      cwe: f.cwe,
-      asset: scan.report.serviceUrl,
-      status: 'open' as const,
-      fixVersion: null,
-      firstSeen: new Date().toISOString(),
-      lastSeen: new Date().toISOString(),
-      title: f.title,
-      remediationSteps: f.remediation,
-      references: [],
-      evidence: {
-        category: f.category,
-        endpoint: f.endpoint,
-        method: f.method,
-        evidence: f.evidence,
-      },
-      scanId: randomUUID(),
-    } as UnifiedFinding));
+    return scan.report.findings.map(
+      (f) =>
+        ({
+          id: randomUUID(),
+          tool: 'api-security' as const,
+          severity: f.severity,
+          cvss: null,
+          cve: null,
+          cwe: f.cwe,
+          asset: scan.report.serviceUrl,
+          status: 'open' as const,
+          fixVersion: null,
+          firstSeen: new Date().toISOString(),
+          lastSeen: new Date().toISOString(),
+          title: f.title,
+          remediationSteps: f.remediation,
+          references: [],
+          evidence: {
+            category: f.category,
+            endpoint: f.endpoint,
+            method: f.method,
+            evidence: f.evidence,
+          },
+          scanId: randomUUID(),
+        }) as UnifiedFinding,
+    );
   }
 
   async store() {
@@ -89,7 +94,8 @@ export class ApiSecurityAdapter implements ScannerAdapter {
     const scan = this.pendingScans.get(scanId);
     if (!scan?.completed) return null;
 
-    const { findings, summary, specTitle, specVersion, totalEndpoints, scanDurationMs } = scan.report;
+    const { findings, summary, specTitle, specVersion, totalEndpoints, scanDurationMs } =
+      scan.report;
 
     // Group findings by category to find top issues
     const categoryCount = new Map<string, number>();
@@ -171,7 +177,9 @@ export class ApiSecurityAdapter implements ScannerAdapter {
         try {
           return JSON.parse(text);
         } catch {
-          throw new Error('Spec URL returned non-JSON content. Please provide a JSON OpenAPI spec.');
+          throw new Error(
+            'Spec URL returned non-JSON content. Please provide a JSON OpenAPI spec.',
+          );
         }
       } else {
         const text = await res.text();

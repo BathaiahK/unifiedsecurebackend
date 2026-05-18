@@ -42,7 +42,10 @@ function extractCve(id: string, aliases: string[]): string | null {
   return all.find((s) => /^CVE-\d{4}-\d+$/.test(s)) ?? null;
 }
 
-function extractCvss(severity: OsvSeverity[] | undefined): { score: number | null; vector: string | null } {
+function extractCvss(severity: OsvSeverity[] | undefined): {
+  score: number | null;
+  vector: string | null;
+} {
   if (!severity) return { score: null, vector: null };
   const cvssEntry = severity.find((s) => s.type === 'CVSS_V3');
   if (!cvssEntry) return { score: null, vector: null };
@@ -60,8 +63,7 @@ function extractCwes(entry: OsvEntry, affected: OsvAffected[]): string[] {
   return [...cwes];
 }
 
-const RANGE_PRIORITY = (type: string) =>
-  type === 'SEMVER' ? 0 : type === 'ECOSYSTEM' ? 1 : 2;
+const RANGE_PRIORITY = (type: string) => (type === 'SEMVER' ? 0 : type === 'ECOSYSTEM' ? 1 : 2);
 
 function extractRangesAndFixVersion(ranges: OsvRange[] | undefined): {
   ranges: VersionRange[];

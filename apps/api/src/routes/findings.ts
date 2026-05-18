@@ -61,7 +61,9 @@ export const findingsRoutes: FastifyPluginAsync = async (app) => {
         })
       : [];
 
-    const otherAffectedAssets = [...new Set(relatedFindings.map((f: { asset: string }) => f.asset))];
+    const otherAffectedAssets = [
+      ...new Set(relatedFindings.map((f: { asset: string }) => f.asset)),
+    ];
 
     return reply.send({
       finding,

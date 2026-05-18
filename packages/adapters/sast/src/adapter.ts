@@ -28,17 +28,17 @@ export class SastAdapter implements ScannerAdapter {
         filesScanned: 0,
         linesScanned: 0,
         rulesApplied: 0,
-        scanDurationMs: 0
-      }
+        scanDurationMs: 0,
+      },
     };
 
     this.activeScan.set(scanId, {
       report,
       startTime: Date.now(),
-      completed: false
+      completed: false,
     });
 
-    this.performScan(scanId, config).catch(err => {
+    this.performScan(scanId, config).catch((err) => {
       console.error(`SAST scan ${scanId} failed:`, err);
       const scan = this.activeScan.get(scanId);
       if (scan) scan.completed = true;
@@ -62,32 +62,35 @@ export class SastAdapter implements ScannerAdapter {
     const scan = this.activeScan.get(scanId);
     if (!scan || scan.report.findings.length === 0) return [];
 
-    return scan.report.findings.map(finding => ({
-      id: randomUUID(),
-      tool: 'sast' as const,
-      severity: finding.severity,
-      cvss: null,
-      cve: null,
-      cwe: finding.cwe,
-      asset: scan.report.asset,
-      status: 'open' as const,
-      fixVersion: null,
-      firstSeen: scan.report.timestamp,
-      lastSeen: scan.report.timestamp,
-      title: `${finding.ruleName} in ${finding.file}:${finding.line}`,
-      remediationSteps: finding.remediation,
-      references: [],
-      evidence: {
-        file: finding.file,
-        line: finding.line,
-        column: finding.column,
-        code: finding.code,
-        ruleId: finding.ruleId,
-        cwe: finding.cwe,
-        matches: finding.matches
-      },
-      scanId: randomUUID()
-    } as UnifiedFinding));
+    return scan.report.findings.map(
+      (finding) =>
+        ({
+          id: randomUUID(),
+          tool: 'sast' as const,
+          severity: finding.severity,
+          cvss: null,
+          cve: null,
+          cwe: finding.cwe,
+          asset: scan.report.asset,
+          status: 'open' as const,
+          fixVersion: null,
+          firstSeen: scan.report.timestamp,
+          lastSeen: scan.report.timestamp,
+          title: `${finding.ruleName} in ${finding.file}:${finding.line}`,
+          remediationSteps: finding.remediation,
+          references: [],
+          evidence: {
+            file: finding.file,
+            line: finding.line,
+            column: finding.column,
+            code: finding.code,
+            ruleId: finding.ruleId,
+            cwe: finding.cwe,
+            matches: finding.matches,
+          },
+          scanId: randomUUID(),
+        }) as UnifiedFinding,
+    );
   }
 
   async store(findings: UnifiedFinding[]): Promise<void> {
@@ -117,7 +120,7 @@ export class SastAdapter implements ScannerAdapter {
       filesScanned: scan.report.analysisDetails?.filesScanned ?? 0,
       rulesApplied: scan.report.analysisDetails?.rulesApplied ?? 0,
       scanDurationMs: scan.report.analysisDetails?.scanDurationMs ?? 0,
-      topRules
+      topRules,
     };
   }
 
@@ -134,17 +137,17 @@ export class SastAdapter implements ScannerAdapter {
       scan.report.findings = findings;
       scan.report.summary = {
         total: findings.length,
-        critical: findings.filter(f => f.severity === 'critical').length,
-        high: findings.filter(f => f.severity === 'high').length,
-        medium: findings.filter(f => f.severity === 'medium').length,
-        low: findings.filter(f => f.severity === 'low').length
+        critical: findings.filter((f) => f.severity === 'critical').length,
+        high: findings.filter((f) => f.severity === 'high').length,
+        medium: findings.filter((f) => f.severity === 'medium').length,
+        low: findings.filter((f) => f.severity === 'low').length,
       };
 
       scan.report.analysisDetails = {
-        filesScanned: new Set(findings.map(f => f.file)).size,
+        filesScanned: new Set(findings.map((f) => f.file)).size,
         linesScanned: findings.length * 10,
         rulesApplied: 14,
-        scanDurationMs: Date.now() - scan.startTime
+        scanDurationMs: Date.now() - scan.startTime,
       };
     } finally {
       scan.completed = true;

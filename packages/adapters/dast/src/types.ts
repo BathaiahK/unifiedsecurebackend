@@ -23,7 +23,14 @@ export interface DastReport {
   totalRequests: number;
   endpointsTested: string[];
   findings: DastFinding[];
-  summary: { total: number; critical: number; high: number; medium: number; low: number; info: number };
+  summary: {
+    total: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
 }
 
 export interface DastSummary {

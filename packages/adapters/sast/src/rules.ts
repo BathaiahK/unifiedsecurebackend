@@ -6,7 +6,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Hardcoded Secret/Credential',
     description: 'Detects hardcoded API keys, passwords, tokens in source code',
     cwe: 'CWE-798',
-    pattern: '(api[_-]?key|password|secret|token|credential)\\s*[:=]\\s*["\']([^"\']+)["\']|const\\s+\\w+\\s*=\\s*["\']sk-[^"\']+["\']|process\\.env\\.[^;\\n]*=\\s*["\'][^"\']*["\']',
+    pattern:
+      '(api[_-]?key|password|secret|token|credential)\\s*[:=]\\s*["\']([^"\']+)["\']|const\\s+\\w+\\s*=\\s*["\']sk-[^"\']+["\']|process\\.env\\.[^;\\n]*=\\s*["\'][^"\']*["\']',
     severity: 'critical',
     languages: ['javascript', 'typescript', 'python', 'java', 'go', 'csharp'],
     remediationTips: [
@@ -14,8 +15,8 @@ export const SAST_RULES: SastRule[] = [
       'Use .env file for local development (add .env to .gitignore)',
       'Use AWS Secrets Manager / HashiCorp Vault for production',
       'If exposed, rotate the credential immediately',
-      'Use process.env.API_KEY instead of hardcoded values'
-    ]
+      'Use process.env.API_KEY instead of hardcoded values',
+    ],
   },
 
   {
@@ -23,7 +24,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'SQL Injection Vulnerability',
     description: 'Detects string concatenation in SQL queries that can lead to SQL injection',
     cwe: 'CWE-89',
-    pattern: '(query|sql|SELECT|INSERT|UPDATE|DELETE)\\s*[=:]\\s*["`].*?[+\\s]+.*?["`]|db\\.(query|execute|run)\\s*\\(["`][^`"]*[+\\s][^`"]*["`]',
+    pattern:
+      '(query|sql|SELECT|INSERT|UPDATE|DELETE)\\s*[=:]\\s*["`].*?[+\\s]+.*?["`]|db\\.(query|execute|run)\\s*\\(["`][^`"]*[+\\s][^`"]*["`]',
     severity: 'critical',
     languages: ['javascript', 'typescript', 'python', 'java', 'php'],
     remediationTips: [
@@ -31,8 +33,8 @@ export const SAST_RULES: SastRule[] = [
       'Use ORMs like Sequelize, SQLAlchemy, TypeORM, or Eloquent',
       'Never concatenate user input directly into SQL strings',
       'Validate and sanitize all user inputs on the server side',
-      'Principle of least privilege: database user should have minimal permissions'
-    ]
+      'Principle of least privilege: database user should have minimal permissions',
+    ],
   },
 
   {
@@ -40,7 +42,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Cross-Site Scripting (XSS)',
     description: 'Detects unescaped user input rendered to DOM or HTML',
     cwe: 'CWE-79',
-    pattern: '(dangerouslySetInnerHTML|innerHTML\\s*=|innerText\\s*=|\.html\\(|<%= |{{{|eval\\(|new Function\\()',
+    pattern:
+      '(dangerouslySetInnerHTML|innerHTML\\s*=|innerText\\s*=|\.html\\(|<%= |{{{|eval\\(|new Function\\()',
     severity: 'high',
     languages: ['javascript', 'typescript', 'html', 'jsx', 'tsx', 'php', 'erb'],
     remediationTips: [
@@ -48,8 +51,8 @@ export const SAST_RULES: SastRule[] = [
       'For user-generated HTML, use DOMPurify library to sanitize',
       'Implement Content Security Policy (CSP) headers',
       'Use textContent instead of innerHTML when possible',
-      'Validate and sanitize all user inputs on the server side'
-    ]
+      'Validate and sanitize all user inputs on the server side',
+    ],
   },
 
   {
@@ -57,7 +60,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Weak Cryptographic Algorithm',
     description: 'Detects use of deprecated or weak encryption/hashing algorithms',
     cwe: 'CWE-327',
-    pattern: '(createHash\\s*\\(\\s*[\'"]md5|createHash\\s*\\(\\s*[\'"]sha1|createCipher|createDecipher|new MD5|new SHA1|hashlib\\.md5|hashlib\\.sha1)',
+    pattern:
+      '(createHash\\s*\\(\\s*[\'"]md5|createHash\\s*\\(\\s*[\'"]sha1|createCipher|createDecipher|new MD5|new SHA1|hashlib\\.md5|hashlib\\.sha1)',
     severity: 'high',
     languages: ['javascript', 'typescript', 'python', 'java', 'go'],
     remediationTips: [
@@ -65,8 +69,8 @@ export const SAST_RULES: SastRule[] = [
       'For passwords, use bcrypt, scrypt, or PBKDF2 with salt: crypto.pbkdf2Sync(password, salt, 100000, 64, "sha256")',
       'Use bcrypt library: bcrypt.hash(password, 10) for secure password hashing',
       'For encryption, use AES-256, not DES or RC4',
-      'Avoid MD5 and SHA-1 for cryptographic purposes (CRC checks only)'
-    ]
+      'Avoid MD5 and SHA-1 for cryptographic purposes (CRC checks only)',
+    ],
   },
 
   {
@@ -74,7 +78,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Hardcoded Password/Auth String',
     description: 'Detects hardcoded passwords or authentication credentials in code',
     cwe: 'CWE-798',
-    pattern: '(password|passwd|pwd)\\s*[:=]\\s*["\']([a-zA-Z0-9!@#$%]{6,})["\']|username\\s*[:=]\\s*["\'][^"\']+["\']\\s*(password|auth)',
+    pattern:
+      '(password|passwd|pwd)\\s*[:=]\\s*["\']([a-zA-Z0-9!@#$%]{6,})["\']|username\\s*[:=]\\s*["\'][^"\']+["\']\\s*(password|auth)',
     severity: 'critical',
     languages: ['javascript', 'typescript', 'python', 'java', 'go', 'csharp', 'php'],
     remediationTips: [
@@ -82,8 +87,8 @@ export const SAST_RULES: SastRule[] = [
       'Use environment variables for non-production passwords',
       'For production, use AWS Secrets Manager, HashiCorp Vault, or Azure Key Vault',
       'Rotate credentials after they are exposed',
-      'Use mnemonic passwords or API keys instead of user passwords'
-    ]
+      'Use mnemonic passwords or API keys instead of user passwords',
+    ],
   },
 
   {
@@ -91,7 +96,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Command Injection Vulnerability',
     description: 'Detects unsanitized user input passed to system commands',
     cwe: 'CWE-78',
-    pattern: '(exec|system|spawn|shell_exec|passthru|eval)\\s*\\([\'"`].*?[+\\s].*?[\'"`]|(os|subprocess|Runtime)\\..*?exec',
+    pattern:
+      '(exec|system|spawn|shell_exec|passthru|eval)\\s*\\([\'"`].*?[+\\s].*?[\'"`]|(os|subprocess|Runtime)\\..*?exec',
     severity: 'critical',
     languages: ['javascript', 'typescript', 'python', 'java', 'php', 'bash', 'shell'],
     remediationTips: [
@@ -99,8 +105,8 @@ export const SAST_RULES: SastRule[] = [
       'Use child_process.execFile() with array of arguments (prevents shell interpretation)',
       'Never pass user input directly to shell commands',
       'Use allowlist validation: only allow known-safe commands',
-      'Run processes with minimum required privileges'
-    ]
+      'Run processes with minimum required privileges',
+    ],
   },
 
   {
@@ -116,8 +122,8 @@ export const SAST_RULES: SastRule[] = [
       'Use JSON.parse() instead of eval() for JSON data',
       'Use yaml.safe_load() instead of yaml.load() in Python',
       'Use pickle-safe alternatives for Python object serialization',
-      'Validate and sanitize all untrusted input before deserialization'
-    ]
+      'Validate and sanitize all untrusted input before deserialization',
+    ],
   },
 
   {
@@ -133,16 +139,18 @@ export const SAST_RULES: SastRule[] = [
       'Validate JWT tokens or session cookies before processing requests',
       'Check user permissions for sensitive operations',
       'Implement role-based access control (RBAC)',
-      'Use middleware like passport.js for authentication in Node.js'
-    ]
+      'Use middleware like passport.js for authentication in Node.js',
+    ],
   },
 
   {
     id: 'path-traversal',
     name: 'Path Traversal / Directory Traversal',
-    description: 'Detects use of user input in file path operations that could escape intended directory',
+    description:
+      'Detects use of user input in file path operations that could escape intended directory',
     cwe: 'CWE-22',
-    pattern: '(readFile|readFileSync|fs\\.read|open\\(|path\\.join)\\s*\\([\'"`].*?[+/].*?userInput|path\\.join\\s*\\(.*?\\.\\..*?\\)',
+    pattern:
+      '(readFile|readFileSync|fs\\.read|open\\(|path\\.join)\\s*\\([\'"`].*?[+/].*?userInput|path\\.join\\s*\\(.*?\\.\\..*?\\)',
     severity: 'high',
     languages: ['javascript', 'typescript', 'python', 'java', 'php'],
     remediationTips: [
@@ -150,8 +158,8 @@ export const SAST_RULES: SastRule[] = [
       'Implement allowlist of permitted files',
       'Never allow user input to contain ".." or absolute paths',
       'Use path.basename() to prevent directory traversal',
-      'Use path.normalize() then verify the path is within allowed scope'
-    ]
+      'Use path.normalize() then verify the path is within allowed scope',
+    ],
   },
 
   {
@@ -167,8 +175,8 @@ export const SAST_RULES: SastRule[] = [
       'Use crypto.getRandomValues() in browser JavaScript',
       'Use secrets module in Python: secrets.token_urlsafe()',
       'Use java.security.SecureRandom for Java applications',
-      'Never use Math.random() for generating tokens, salts, or IVs'
-    ]
+      'Never use Math.random() for generating tokens, salts, or IVs',
+    ],
   },
 
   {
@@ -176,7 +184,8 @@ export const SAST_RULES: SastRule[] = [
     name: 'Sensitive Data Logged',
     description: 'Detects logging of sensitive information like passwords, tokens, or PII',
     cwe: 'CWE-532',
-    pattern: '(console\\.log|logger\\.(info|debug|warn)|print\\(|log\\()\\s*\\(.*?(password|token|secret|api[_-]?key|credit[_-]?card|ssn)',
+    pattern:
+      '(console\\.log|logger\\.(info|debug|warn)|print\\(|log\\()\\s*\\(.*?(password|token|secret|api[_-]?key|credit[_-]?card|ssn)',
     severity: 'high',
     languages: ['javascript', 'typescript', 'python', 'java', 'go', 'csharp'],
     remediationTips: [
@@ -184,8 +193,8 @@ export const SAST_RULES: SastRule[] = [
       'Use structured logging and redact sensitive fields',
       'Implement log filtering to mask sensitive patterns',
       'Use environment variables for sensitive configuration',
-      'Store logs securely and restrict access'
-    ]
+      'Store logs securely and restrict access',
+    ],
   },
 
   {
@@ -201,8 +210,8 @@ export const SAST_RULES: SastRule[] = [
       'Remove inline comments from dynamic SQL construction',
       'Always use parameterized prepared statements',
       'Validate and sanitize all user inputs',
-      'Apply principle of least privilege to database users'
-    ]
+      'Apply principle of least privilege to database users',
+    ],
   },
 
   {
@@ -218,8 +227,8 @@ export const SAST_RULES: SastRule[] = [
       'Use framework CSRF protection: Django csrf_token(), Laravel CSRF middleware',
       'Verify CSRF token on server-side before processing requests',
       'Use SameSite cookie attribute: Set-Cookie: sessionId=xxx; SameSite=Strict',
-      'Implement double-submit cookie pattern for SPAs'
-    ]
+      'Implement double-submit cookie pattern for SPAs',
+    ],
   },
 
   {
@@ -235,15 +244,15 @@ export const SAST_RULES: SastRule[] = [
       'Replace gets() with fgets() (C)',
       'Replace sprintf() with snprintf() for buffer safety',
       'Replace mysql_query() with mysqli or PDO (PHP)',
-      'Consult function deprecation warnings and update to modern APIs'
-    ]
-  }
+      'Consult function deprecation warnings and update to modern APIs',
+    ],
+  },
 ];
 
 export function getRuleById(id: string): SastRule | undefined {
-  return SAST_RULES.find(rule => rule.id === id);
+  return SAST_RULES.find((rule) => rule.id === id);
 }
 
 export function getRulesByLanguage(language: string): SastRule[] {
-  return SAST_RULES.filter(rule => rule.languages.includes(language.toLowerCase()));
+  return SAST_RULES.filter((rule) => rule.languages.includes(language.toLowerCase()));
 }

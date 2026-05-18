@@ -22,7 +22,8 @@ async function downloadEcosystemZipToFile(ecosystem: OsvEcosystem): Promise<stri
   const url = `${OSV_GCS_BASE}/${ecosystemToPath(ecosystem)}/all.zip`;
   console.log(`[vuln-db] Downloading ${url}`);
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`OSV download failed for ${ecosystem}: ${res.status} ${res.statusText}`);
+  if (!res.ok)
+    throw new Error(`OSV download failed for ${ecosystem}: ${res.status} ${res.statusText}`);
   if (!res.body) throw new Error(`OSV download: no body for ${ecosystem}`);
 
   const tmpPath = join(tmpdir(), `osv-${ecosystem}-${Date.now()}.zip`);
@@ -66,7 +67,9 @@ export async function syncEcosystem(
   if (!force) {
     const state = await store.getSyncState(ecosystem);
     if (state && Date.now() - state.lastSyncAt.getTime() < SYNC_TTL_MS) {
-      console.log(`[vuln-db] ${ecosystem} synced ${Math.round((Date.now() - state.lastSyncAt.getTime()) / 3600000)}h ago — skipping`);
+      console.log(
+        `[vuln-db] ${ecosystem} synced ${Math.round((Date.now() - state.lastSyncAt.getTime()) / 3600000)}h ago — skipping`,
+      );
       return { skipped: true, count: state.advisoryCount };
     }
   }
@@ -76,7 +79,11 @@ export async function syncEcosystem(
   try {
     advisories = parseZipFile(zipPath);
   } finally {
-    try { unlinkSync(zipPath); } catch { /* ignore cleanup error */ }
+    try {
+      unlinkSync(zipPath);
+    } catch {
+      /* ignore cleanup error */
+    }
   }
   await upsertInBatches(store, advisories);
 
@@ -109,6 +116,8 @@ export async function syncAllEcosystems(
   }
 
   if (total > 0) {
-    console.log(`[vuln-db] Sync complete — ${total} advisories upserted across ${targets.length} ecosystems`);
+    console.log(
+      `[vuln-db] Sync complete — ${total} advisories upserted across ${targets.length} ecosystems`,
+    );
   }
 }

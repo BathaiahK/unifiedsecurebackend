@@ -2,7 +2,13 @@ export interface ScanProgressEvent {
   scanId: string;
   status: 'initializing' | 'running' | 'complete' | 'failed';
   progress: number; // 0-100
-  stage?: 'parsing' | 'vulnerability-lookup' | 'license-analysis' | 'supply-chain' | 'remediation' | 'complete';
+  stage?:
+    | 'parsing'
+    | 'vulnerability-lookup'
+    | 'license-analysis'
+    | 'supply-chain'
+    | 'remediation'
+    | 'complete';
   message?: string;
 
   // Intermediate results
@@ -65,7 +71,14 @@ export interface EnhancedFinding {
 }
 
 export interface ManifestFile {
-  type: 'package.json' | 'requirements.txt' | 'pom.xml' | 'go.mod' | 'Gemfile' | 'packages.config' | 'package-lock.json';
+  type:
+    | 'package.json'
+    | 'requirements.txt'
+    | 'pom.xml'
+    | 'go.mod'
+    | 'Gemfile'
+    | 'packages.config'
+    | 'package-lock.json';
   path: string;
   content: string;
 }

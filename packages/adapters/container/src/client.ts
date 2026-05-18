@@ -56,10 +56,12 @@ export class TrivyClient {
       const authArgs = this.buildAuthArgs();
       const { stdout } = await execFileAsync(this.config.trivyPath, [
         'image',
-        '--format', 'json',
+        '--format',
+        'json',
         '--quiet',
         '--no-progress',
-        '--scanners', 'vuln,license',
+        '--scanners',
+        'vuln,license',
         ...authArgs,
         image,
       ]);
@@ -76,7 +78,8 @@ export class TrivyClient {
       const authArgs = this.buildAuthArgs();
       const { stdout } = await execFileAsync(this.config.trivyPath, [
         'image',
-        '--format', 'cyclonedx',
+        '--format',
+        'cyclonedx',
         '--quiet',
         '--no-progress',
         ...authArgs,
@@ -95,10 +98,12 @@ export class TrivyClient {
       const authArgs = this.buildAuthArgs();
       const { stdout } = await execFileAsync(this.config.trivyPath, [
         'image',
-        '--format', 'json',
+        '--format',
+        'json',
         '--quiet',
         '--no-progress',
-        '--compliance', 'docker-cis',
+        '--compliance',
+        'docker-cis',
         ...authArgs,
         image,
       ]);
@@ -115,10 +120,12 @@ export class TrivyClient {
       const authArgs = this.buildAuthArgs();
       const { stdout } = await execFileAsync(this.config.trivyPath, [
         'image',
-        '--format', 'json',
+        '--format',
+        'json',
         '--quiet',
         '--no-progress',
-        '--scanners', 'vuln',
+        '--scanners',
+        'vuln',
         ...authArgs,
         image,
       ]);
@@ -135,10 +142,12 @@ export class TrivyClient {
       const authArgs = this.buildAuthArgs();
       const { stdout } = await execFileAsync(this.config.trivyPath, [
         'image',
-        '--format', 'json',
+        '--format',
+        'json',
         '--quiet',
         '--no-progress',
-        '--scanners', 'misconfig,secret',
+        '--scanners',
+        'misconfig,secret',
         ...authArgs,
         image,
       ]);

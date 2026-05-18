@@ -3,11 +3,19 @@ import { enrichFindings } from './engine.js';
 import type { UnifiedFinding } from '@usp/schema';
 
 vi.mock('./nvd-client.js', () => ({
-  enrichFromNvd: vi.fn().mockResolvedValue({ cvss: 9.8, severity: 'critical', cwe: 'CWE-917', description: 'RCE' }),
+  enrichFromNvd: vi
+    .fn()
+    .mockResolvedValue({ cvss: 9.8, severity: 'critical', cwe: 'CWE-917', description: 'RCE' }),
 }));
 
 vi.mock('./osv-client.js', () => ({
-  enrichFromOsv: vi.fn().mockResolvedValue({ fixVersion: '2.17.1', advisoryUrls: ['https://nvd.nist.gov/CVE-2021-44228'], ecosystem: 'Maven' }),
+  enrichFromOsv: vi
+    .fn()
+    .mockResolvedValue({
+      fixVersion: '2.17.1',
+      advisoryUrls: ['https://nvd.nist.gov/CVE-2021-44228'],
+      ecosystem: 'Maven',
+    }),
 }));
 
 const baseFinding: UnifiedFinding = {

@@ -16,17 +16,17 @@ export interface FetchedFile {
 
 // Ordered by parse precision: lock files first, manifests last.
 export const DEPENDENCY_FILES = [
-  'package-lock.json',   // npm  (v1/v2/v3)
-  'yarn.lock',           // yarn (v1/berry)
-  'pnpm-lock.yaml',      // pnpm (v6/v9)
-  'package.json',        // npm  (fallback — ranges only, used when no lock file)
-  'pom.xml',             // Maven
-  'build.gradle',        // Gradle (basic support)
-  'requirements.txt',    // pip
-  'Pipfile.lock',        // pipenv
-  'go.sum',              // Go modules
-  'Gemfile.lock',        // Bundler (Ruby)
-  'Cargo.lock',          // Cargo (Rust)
+  'package-lock.json', // npm  (v1/v2/v3)
+  'yarn.lock', // yarn (v1/berry)
+  'pnpm-lock.yaml', // pnpm (v6/v9)
+  'package.json', // npm  (fallback — ranges only, used when no lock file)
+  'pom.xml', // Maven
+  'build.gradle', // Gradle (basic support)
+  'requirements.txt', // pip
+  'Pipfile.lock', // pipenv
+  'go.sum', // Go modules
+  'Gemfile.lock', // Bundler (Ruby)
+  'Cargo.lock', // Cargo (Rust)
 ] as const;
 
 // ── URL parsing ───────────────────────────────────────────────────────────────
@@ -35,30 +35,31 @@ type GitHost = 'github' | 'gitlab' | 'bitbucket' | 'gitlab-self-hosted';
 
 interface ParsedRepo {
   host: GitHost;
-  ownerRepo: string;   // "owner/repo"
-  baseUrl: string;     // "https://github.com" etc.
+  ownerRepo: string; // "owner/repo"
+  baseUrl: string; // "https://github.com" etc.
 }
 
 function parseRepoUrl(raw: string): ParsedRepo {
   // Normalise SSH → HTTPS and strip trailing .git + /tree/... suffixes
   const url = raw
     .replace(/^git@github\.com:(.+)/, 'https://github.com/$1')
-    .replace(/^git@gitlab\.com:(.+)/,  'https://gitlab.com/$1')
+    .replace(/^git@gitlab\.com:(.+)/, 'https://gitlab.com/$1')
     .replace(/^git@bitbucket\.org:(.+)/, 'https://bitbucket.org/$1')
     .replace(/\.git$/, '')
     .replace(/\/(?:tree|blob|src)\/.*$/, '');
 
-  const githubRe    = /^(https?:\/\/github\.com)\/([^/]+\/[^/?#]+)/;
-  const gitlabRe    = /^(https?:\/\/gitlab\.com)\/([^/]+\/[^/?#]+)/;
+  const githubRe = /^(https?:\/\/github\.com)\/([^/]+\/[^/?#]+)/;
+  const gitlabRe = /^(https?:\/\/gitlab\.com)\/([^/]+\/[^/?#]+)/;
   const bitbucketRe = /^(https?:\/\/bitbucket\.org)\/([^/]+\/[^/?#]+)/;
-  const selfGlRe    = /^(https?:\/\/[^/]+)\/([^/]+\/[^/?#]+)/;
+  const selfGlRe = /^(https?:\/\/[^/]+)\/([^/]+\/[^/?#]+)/;
 
   let m: RegExpMatchArray | null;
 
-  if ((m = url.match(githubRe)))    return { host: 'github',             ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(gitlabRe)))    return { host: 'gitlab',             ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(bitbucketRe))) return { host: 'bitbucket',          ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(selfGlRe)))    return { host: 'gitlab-self-hosted', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(githubRe))) return { host: 'github', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(gitlabRe))) return { host: 'gitlab', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(bitbucketRe))) return { host: 'bitbucket', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(selfGlRe)))
+    return { host: 'gitlab-self-hosted', ownerRepo: m[2], baseUrl: m[1] };
 
   throw new Error(`Unrecognised git URL format: ${raw}`);
 }
@@ -93,8 +94,8 @@ function authHeaders(host: GitHost, projectToken?: string): Record<string, strin
   // Fall back to environment-level tokens
   const ghToken = process.env['GITHUB_TOKEN'];
   const glToken = process.env['GITLAB_TOKEN'];
-  const bbUser  = process.env['BITBUCKET_USERNAME'];
-  const bbPass  = process.env['BITBUCKET_APP_PASSWORD'];
+  const bbUser = process.env['BITBUCKET_USERNAME'];
+  const bbPass = process.env['BITBUCKET_APP_PASSWORD'];
 
   if (host === 'github' && ghToken) {
     h['Authorization'] = `Bearer ${ghToken}`;
@@ -120,7 +121,7 @@ export async function fetchRepoFiles(
   filePaths: readonly string[] = DEPENDENCY_FILES,
   projectToken?: string,
 ): Promise<FetchedFile[]> {
-  const parsed  = parseRepoUrl(repoUrl);
+  const parsed = parseRepoUrl(repoUrl);
   const headers = authHeaders(parsed.host, projectToken);
   const timeout = 12_000; // ms per request
 
@@ -131,15 +132,15 @@ export async function fetchRepoFiles(
         headers,
         signal: AbortSignal.timeout(timeout),
       });
-      if (!res.ok) return null;            // 404 = file not in repo
+      if (!res.ok) return null; // 404 = file not in repo
       const content = await res.text();
       return { path: filePath, content };
     }),
   );
 
   return settled
-    .filter((r): r is PromiseFulfilledResult<FetchedFile> =>
-      r.status === 'fulfilled' && r.value !== null,
+    .filter(
+      (r): r is PromiseFulfilledResult<FetchedFile> => r.status === 'fulfilled' && r.value !== null,
     )
     .map((r) => r.value);
 }

@@ -2,8 +2,17 @@ import type { ScannerAdapter, ScanConfig, ScanStatus, UnifiedFinding } from '@us
 import { getVulnStore, lookupPurls, type VulnStore } from '@usp/vuln-db';
 import { normalizeMatch } from './normalize.js';
 import { scaStreamingQueue } from './streaming-queue.js';
-import { analyzeLicenseRisk, aggregateLicenseRisks, generateLicenseReport } from './license-analyzer.js';
-import { resolveTransitiveDependencies, buildDependencyTree, countTransitiveVulnerabilities, getTransitiveChain } from './transitive-resolver.js';
+import {
+  analyzeLicenseRisk,
+  aggregateLicenseRisks,
+  generateLicenseReport,
+} from './license-analyzer.js';
+import {
+  resolveTransitiveDependencies,
+  buildDependencyTree,
+  countTransitiveVulnerabilities,
+  getTransitiveChain,
+} from './transitive-resolver.js';
 import type { TransitiveDependency, EnhancedFinding } from './types.js';
 
 interface PendingScan {
@@ -96,14 +105,27 @@ export class ScaAdapterEnhanced implements ScannerAdapter {
       const findings = matches.map((m) => normalizeMatch(m, config.asset, scanId));
       pending.findings = findings;
 
-      scaStreamingQueue.progress(scanId, 'running', 50, 'vulnerability-lookup', `Found ${findings.length} vulnerabilities`, {
-        findingCount: findings.length,
-      });
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        50,
+        'vulnerability-lookup',
+        `Found ${findings.length} vulnerabilities`,
+        {
+          findingCount: findings.length,
+        },
+      );
 
       await sleep(200);
 
       // Stage 3: License Analysis (75%)
-      scaStreamingQueue.progress(scanId, 'running', 60, 'license-analysis', 'Analyzing licenses...');
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        60,
+        'license-analysis',
+        'Analyzing licenses...',
+      );
 
       // For now, simulate license analysis (in real scenario, would extract from manifests)
       const sampleLicenses = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'GPL-2.0', 'Proprietary'];
@@ -115,17 +137,32 @@ export class ScaAdapterEnhanced implements ScannerAdapter {
       };
 
       const licenseReport = generateLicenseReport(pending.licenseRisks);
-      scaStreamingQueue.progress(scanId, 'running', 75, 'license-analysis', 'License analysis complete', {
-        licenseRisks: pending.licenseRisks,
-      });
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        75,
+        'license-analysis',
+        'License analysis complete',
+        {
+          licenseRisks: pending.licenseRisks,
+        },
+      );
 
       await sleep(200);
 
       // Stage 4: Remediation & Summary (90%)
-      scaStreamingQueue.progress(scanId, 'running', 85, 'remediation', 'Generating remediation plan...');
+      scaStreamingQueue.progress(
+        scanId,
+        'running',
+        85,
+        'remediation',
+        'Generating remediation plan...',
+      );
 
       // Simulate remediation generation
-      const remediationSteps = findings.slice(0, 3).map((f) => `${f.title} → upgrade to available fix version`);
+      const remediationSteps = findings
+        .slice(0, 3)
+        .map((f) => `${f.title} → upgrade to available fix version`);
 
       scaStreamingQueue.progress(scanId, 'running', 95, 'remediation', 'Scan complete', {
         findingCount: findings.length,
@@ -134,10 +171,17 @@ export class ScaAdapterEnhanced implements ScannerAdapter {
       await sleep(100);
 
       // Stage 5: Complete (100%)
-      scaStreamingQueue.progress(scanId, 'complete', 100, 'complete', 'Scan completed successfully', {
-        findingCount: findings.length,
-        licenseRisks: pending.licenseRisks,
-      });
+      scaStreamingQueue.progress(
+        scanId,
+        'complete',
+        100,
+        'complete',
+        'Scan completed successfully',
+        {
+          findingCount: findings.length,
+          licenseRisks: pending.licenseRisks,
+        },
+      );
     } catch (err) {
       scaStreamingQueue.emit({
         scanId,

@@ -53,30 +53,33 @@ export class DastAdapter implements ScannerAdapter {
     const scan = this.pendingScans.get(scanId);
     if (!scan || scan.report.findings.length === 0) return [];
 
-    return scan.report.findings.map((f) => ({
-      id: randomUUID(),
-      tool: 'dast' as const,
-      severity: f.severity === 'info' ? 'info' : f.severity,
-      cvss: null,
-      cve: null,
-      cwe: f.cwe,
-      asset: scan.report.targetUrl,
-      status: 'open' as const,
-      fixVersion: null,
-      firstSeen: scan.report.startedAt,
-      lastSeen: scan.report.completedAt || scan.report.startedAt,
-      title: f.title,
-      remediationSteps: f.remediation,
-      references: [],
-      evidence: {
-        endpoint: f.endpoint,
-        method: f.method,
-        payload: f.payload,
-        evidence: f.evidence,
-        probeName: f.probeName,
-      },
-      scanId: randomUUID(),
-    } as UnifiedFinding));
+    return scan.report.findings.map(
+      (f) =>
+        ({
+          id: randomUUID(),
+          tool: 'dast' as const,
+          severity: f.severity === 'info' ? 'info' : f.severity,
+          cvss: null,
+          cve: null,
+          cwe: f.cwe,
+          asset: scan.report.targetUrl,
+          status: 'open' as const,
+          fixVersion: null,
+          firstSeen: scan.report.startedAt,
+          lastSeen: scan.report.completedAt || scan.report.startedAt,
+          title: f.title,
+          remediationSteps: f.remediation,
+          references: [],
+          evidence: {
+            endpoint: f.endpoint,
+            method: f.method,
+            payload: f.payload,
+            evidence: f.evidence,
+            probeName: f.probeName,
+          },
+          scanId: randomUUID(),
+        }) as UnifiedFinding,
+    );
   }
 
   async store() {

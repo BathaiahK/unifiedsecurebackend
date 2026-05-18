@@ -2,7 +2,7 @@ name: Build & Publish Docker Images
 
 on:
   workflow_run:
-    workflows: ["CI - Test & Validate"]
+    workflows: ['CI - Test & Validate']
     types:
       - completed
     branches:

@@ -7,30 +7,98 @@ import type { LicenseRisk } from './types.js';
 // Unknown: Requires review
 const LICENSE_RISK_MAP: Record<string, LicenseRisk> = {
   // Permissive (Safe)
-  'MIT': { license: 'MIT', riskLevel: 'safe', reason: 'Permissive - allows commercial use with attribution' },
-  'Apache-2.0': { license: 'Apache-2.0', riskLevel: 'safe', reason: 'Permissive - allows commercial use with patent protection' },
-  'Apache License 2.0': { license: 'Apache-2.0', riskLevel: 'safe', reason: 'Permissive - allows commercial use with patent protection' },
-  'BSD': { license: 'BSD', riskLevel: 'safe', reason: 'Permissive - allows commercial use with attribution' },
-  'BSD-2-Clause': { license: 'BSD-2-Clause', riskLevel: 'safe', reason: 'Permissive - allows commercial use' },
-  'BSD-3-Clause': { license: 'BSD-3-Clause', riskLevel: 'safe', reason: 'Permissive - allows commercial use' },
-  'ISC': { license: 'ISC', riskLevel: 'safe', reason: 'Permissive - allows commercial use' },
-  'Unlicense': { license: 'Unlicense', riskLevel: 'safe', reason: 'Public domain - no restrictions' },
+  MIT: {
+    license: 'MIT',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use with attribution',
+  },
+  'Apache-2.0': {
+    license: 'Apache-2.0',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use with patent protection',
+  },
+  'Apache License 2.0': {
+    license: 'Apache-2.0',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use with patent protection',
+  },
+  BSD: {
+    license: 'BSD',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use with attribution',
+  },
+  'BSD-2-Clause': {
+    license: 'BSD-2-Clause',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use',
+  },
+  'BSD-3-Clause': {
+    license: 'BSD-3-Clause',
+    riskLevel: 'safe',
+    reason: 'Permissive - allows commercial use',
+  },
+  ISC: { license: 'ISC', riskLevel: 'safe', reason: 'Permissive - allows commercial use' },
+  Unlicense: { license: 'Unlicense', riskLevel: 'safe', reason: 'Public domain - no restrictions' },
   '0BSD': { license: '0BSD', riskLevel: 'safe', reason: 'Permissive - allows commercial use' },
-  'MPL-2.0': { license: 'MPL-2.0', riskLevel: 'safe', reason: 'Weak copyleft - derivative files must be open source' },
-  'LGPL-2.1': { license: 'LGPL-2.1', riskLevel: 'warning', reason: 'Weak copyleft - can be used in proprietary apps with restrictions' },
-  'LGPL-3.0': { license: 'LGPL-3.0', riskLevel: 'warning', reason: 'Weak copyleft - stronger restrictions than 2.1' },
+  'MPL-2.0': {
+    license: 'MPL-2.0',
+    riskLevel: 'safe',
+    reason: 'Weak copyleft - derivative files must be open source',
+  },
+  'LGPL-2.1': {
+    license: 'LGPL-2.1',
+    riskLevel: 'warning',
+    reason: 'Weak copyleft - can be used in proprietary apps with restrictions',
+  },
+  'LGPL-3.0': {
+    license: 'LGPL-3.0',
+    riskLevel: 'warning',
+    reason: 'Weak copyleft - stronger restrictions than 2.1',
+  },
 
   // Copyleft (Warning/Critical)
-  'GPL': { license: 'GPL', riskLevel: 'critical', reason: 'Strong copyleft - entire project must be GPL' },
-  'GPL-2.0': { license: 'GPL-2.0', riskLevel: 'critical', reason: 'Strong copyleft - entire project must be open source' },
-  'GPL-3.0': { license: 'GPL-3.0', riskLevel: 'critical', reason: 'Strong copyleft - entire project must be open source' },
-  'AGPL': { license: 'AGPL', riskLevel: 'critical', reason: 'Network copyleft - source must be shared if accessed over network' },
-  'AGPL-3.0': { license: 'AGPL-3.0', riskLevel: 'critical', reason: 'Network copyleft - source sharing required for network use' },
+  GPL: {
+    license: 'GPL',
+    riskLevel: 'critical',
+    reason: 'Strong copyleft - entire project must be GPL',
+  },
+  'GPL-2.0': {
+    license: 'GPL-2.0',
+    riskLevel: 'critical',
+    reason: 'Strong copyleft - entire project must be open source',
+  },
+  'GPL-3.0': {
+    license: 'GPL-3.0',
+    riskLevel: 'critical',
+    reason: 'Strong copyleft - entire project must be open source',
+  },
+  AGPL: {
+    license: 'AGPL',
+    riskLevel: 'critical',
+    reason: 'Network copyleft - source must be shared if accessed over network',
+  },
+  'AGPL-3.0': {
+    license: 'AGPL-3.0',
+    riskLevel: 'critical',
+    reason: 'Network copyleft - source sharing required for network use',
+  },
 
   // Proprietary / Unknown
-  'Proprietary': { license: 'Proprietary', riskLevel: 'critical', reason: 'Proprietary - commercial restrictions may apply' },
-  'Commercial': { license: 'Commercial', riskLevel: 'critical', reason: 'Commercial - license required for use' },
-  'Custom': { license: 'Custom', riskLevel: 'warning', reason: 'Custom license - requires legal review' },
+  Proprietary: {
+    license: 'Proprietary',
+    riskLevel: 'critical',
+    reason: 'Proprietary - commercial restrictions may apply',
+  },
+  Commercial: {
+    license: 'Commercial',
+    riskLevel: 'critical',
+    reason: 'Commercial - license required for use',
+  },
+  Custom: {
+    license: 'Custom',
+    riskLevel: 'warning',
+    reason: 'Custom license - requires legal review',
+  },
 };
 
 export function analyzeLicenseRisk(license: string | null | undefined): LicenseRisk {
@@ -46,7 +114,7 @@ export function analyzeLicenseRisk(license: string | null | undefined): LicenseR
 
   // Direct lookup
   const entry = Object.entries(LICENSE_RISK_MAP).find(
-    ([key]) => key.toUpperCase() === normalized || license.includes(key)
+    ([key]) => key.toUpperCase() === normalized || license.includes(key),
   );
 
   if (entry) {
@@ -99,7 +167,11 @@ export function aggregateLicenseRisks(licenses: string[]): {
   return risks;
 }
 
-export function generateLicenseReport(riskSummary: { safe: number; warning: number; critical: number }): string {
+export function generateLicenseReport(riskSummary: {
+  safe: number;
+  warning: number;
+  critical: number;
+}): string {
   const total = riskSummary.safe + riskSummary.warning + riskSummary.critical;
   const lines: string[] = [];
 
@@ -109,7 +181,9 @@ export function generateLicenseReport(riskSummary: { safe: number; warning: numb
     lines.push(`  ⚠️ Warning: ${riskSummary.warning} (copyleft licenses requiring review)`);
   }
   if (riskSummary.critical > 0) {
-    lines.push(`  🚩 Critical: ${riskSummary.critical} (strong copyleft, proprietary, or commercial)`);
+    lines.push(
+      `  🚩 Critical: ${riskSummary.critical} (strong copyleft, proprietary, or commercial)`,
+    );
   }
 
   if (riskSummary.warning > 0 || riskSummary.critical > 0) {

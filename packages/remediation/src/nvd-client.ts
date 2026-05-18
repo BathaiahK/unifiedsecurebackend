@@ -4,14 +4,20 @@ const NvdCveItemSchema = z.object({
   cve: z.object({
     id: z.string(),
     descriptions: z.array(z.object({ lang: z.string(), value: z.string() })),
-    metrics: z.object({
-      cvssMetricV31: z
-        .array(z.object({ cvssData: z.object({ baseScore: z.number(), baseSeverity: z.string() }) }))
-        .optional(),
-      cvssMetricV30: z
-        .array(z.object({ cvssData: z.object({ baseScore: z.number(), baseSeverity: z.string() }) }))
-        .optional(),
-    }).optional(),
+    metrics: z
+      .object({
+        cvssMetricV31: z
+          .array(
+            z.object({ cvssData: z.object({ baseScore: z.number(), baseSeverity: z.string() }) }),
+          )
+          .optional(),
+        cvssMetricV30: z
+          .array(
+            z.object({ cvssData: z.object({ baseScore: z.number(), baseSeverity: z.string() }) }),
+          )
+          .optional(),
+      })
+      .optional(),
     weaknesses: z
       .array(z.object({ description: z.array(z.object({ lang: z.string(), value: z.string() })) }))
       .optional(),
@@ -59,7 +65,7 @@ export async function enrichFromNvd(
       return { cvss: null, severity: null, cwe: null, description: null };
     }
 
-    const body = await res.json() as { vulnerabilities?: unknown[] };
+    const body = (await res.json()) as { vulnerabilities?: unknown[] };
     const raw = body.vulnerabilities?.[0];
     const parsed = NvdCveItemSchema.safeParse(raw);
 

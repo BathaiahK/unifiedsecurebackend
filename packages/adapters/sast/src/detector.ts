@@ -5,11 +5,7 @@ import { SAST_RULES, getRulesByLanguage } from './rules.js';
 export class VulnerabilityDetector {
   private findings: SastFinding[] = [];
 
-  detectVulnerabilities(
-    sourceCode: string,
-    filePath: string,
-    language: string
-  ): SastFinding[] {
+  detectVulnerabilities(sourceCode: string, filePath: string, language: string): SastFinding[] {
     this.findings = [];
     const rules = getRulesByLanguage(language);
 
@@ -43,9 +39,9 @@ export class VulnerabilityDetector {
                 line: lineNumber,
                 column: columnNumber,
                 lineContent: lineContent.trim(),
-                matchedText: match[0]
-              }
-            ]
+                matchedText: match[0],
+              },
+            ],
           };
 
           this.findings.push(finding);
@@ -91,7 +87,7 @@ export function validatePassword(plain: string, stored: string) {
   const hash = crypto.createHash('sha1').update(plain).digest('hex');
   return hash === stored;
 }
-        `
+        `,
       },
       'src/api.ts': {
         language: 'typescript',
@@ -134,7 +130,7 @@ app.get('/files/:path', (req, res) => {
   const content = fs.readFileSync(filePath, 'utf-8');
   res.send(content);
 });
-        `
+        `,
       },
       'src/utils.ts': {
         language: 'typescript',
@@ -163,7 +159,7 @@ export function logUserData(user: any) {
   console.log('User logged in:', user.email, 'Password:', user.password);
   console.log('API Key:', user.apiKey);
 }
-        `
+        `,
       },
       'src/database.ts': {
         language: 'typescript',
@@ -203,7 +199,7 @@ export async function getUserByEmail(email: string) {
   const sql = \`SELECT * FROM users WHERE email = '\${email}'\`;
   return await conn.query(sql);
 }
-        `
+        `,
       },
       'src/frontend.tsx': {
         language: 'typescript',
@@ -234,7 +230,7 @@ export function SearchResults({ query }: { query: string }) {
     <div dangerouslySetInnerHTML={{ __html: \`Search results for: \${query}\` }} />
   );
 }
-        `
+        `,
       },
       'src/config.ts': {
         language: 'typescript',
@@ -261,8 +257,8 @@ export const AWS_CONFIG = {
   accessKeyId: 'AKIA1234567890ABCDEF',
   secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 };
-        `
-      }
+        `,
+      },
     };
 
     // Analyze all mock files
@@ -326,24 +322,40 @@ export const AWS_CONFIG = {
     throw new Error(`Invalid GitHub URL: ${url}`);
   }
 
-  private async fetchSourceFiles(owner: string, repo: string): Promise<Array<{ path: string; language: string }>> {
+  private async fetchSourceFiles(
+    owner: string,
+    repo: string,
+  ): Promise<Array<{ path: string; language: string }>> {
     const sourceExtensions = new Set([
-      '.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.php', '.cs', '.rb', '.kt', '.rs'
+      '.ts',
+      '.tsx',
+      '.js',
+      '.jsx',
+      '.py',
+      '.java',
+      '.go',
+      '.php',
+      '.cs',
+      '.rb',
+      '.kt',
+      '.rs',
     ]);
 
     try {
       const response = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
-        { headers: { 'User-Agent': 'USP-SAST' } }
+        { headers: { 'User-Agent': 'USP-SAST' } },
       );
       if (!response.ok) return [];
 
       const data = (await response.json()) as { tree: Array<{ path: string; type: string }> };
       return data.tree
-        .filter(item => item.type === 'blob' && sourceExtensions.has(this.getFileExtension(item.path)))
-        .map(item => ({
+        .filter(
+          (item) => item.type === 'blob' && sourceExtensions.has(this.getFileExtension(item.path)),
+        )
+        .map((item) => ({
           path: item.path,
-          language: this.detectLanguage(item.path)
+          language: this.detectLanguage(item.path),
         }));
     } catch (error) {
       console.warn('Failed to fetch source files from GitHub API:', error);
@@ -354,7 +366,7 @@ export const AWS_CONFIG = {
   private async fetchFileContent(owner: string, repo: string, path: string): Promise<string> {
     const response = await fetch(
       `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${path}`,
-      { headers: { 'User-Agent': 'USP-SAST' } }
+      { headers: { 'User-Agent': 'USP-SAST' } },
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.text();
@@ -368,8 +380,10 @@ export const AWS_CONFIG = {
   private detectLanguage(path: string): string {
     const ext = this.getFileExtension(path).toLowerCase();
     const langMap: Record<string, string> = {
-      '.ts': 'typescript', '.tsx': 'typescript',
-      '.js': 'javascript', '.jsx': 'javascript',
+      '.ts': 'typescript',
+      '.tsx': 'typescript',
+      '.js': 'javascript',
+      '.jsx': 'javascript',
       '.py': 'python',
       '.java': 'java',
       '.go': 'go',
@@ -377,7 +391,7 @@ export const AWS_CONFIG = {
       '.cs': 'csharp',
       '.rb': 'ruby',
       '.kt': 'kotlin',
-      '.rs': 'rust'
+      '.rs': 'rust',
     };
     return langMap[ext] || 'javascript';
   }

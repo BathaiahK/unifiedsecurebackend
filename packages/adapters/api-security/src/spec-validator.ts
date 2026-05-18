@@ -40,7 +40,7 @@ function createFinding(
   endpoint: string | undefined,
   method: string | undefined,
   evidence: string,
-  remediation: string[]
+  remediation: string[],
 ): ApiSecurityFinding {
   return {
     id: randomUUID(),
@@ -61,7 +61,10 @@ export class ApiSpecValidator {
     const findings: ApiSecurityFinding[] = [];
 
     // 1. Check for security schemes definition
-    if (!spec.components?.securitySchemes || Object.keys(spec.components.securitySchemes).length === 0) {
+    if (
+      !spec.components?.securitySchemes ||
+      Object.keys(spec.components.securitySchemes).length === 0
+    ) {
       findings.push(
         createFinding(
           'missing-authentication',
@@ -76,8 +79,8 @@ export class ApiSpecValidator {
             'Define security schemes in the OpenAPI spec (OAuth2, JWT, API Key, etc.)',
             'Add security requirements to all protected endpoints',
             'Document authentication requirements clearly',
-          ]
-        )
+          ],
+        ),
       );
     }
 
@@ -113,8 +116,8 @@ export class ApiSpecValidator {
                 'Add security requirements to this endpoint',
                 'Use @security decorator or security field in spec',
                 'Ensure all sensitive operations require authentication',
-              ]
-            )
+              ],
+            ),
           );
         }
 
@@ -144,8 +147,8 @@ export class ApiSpecValidator {
                           'Use separate DTOs for internal vs external responses',
                           'Implement field-level encryption for sensitive data',
                           'Use @Exclude or similar decorators to hide fields',
-                        ]
-                      )
+                        ],
+                      ),
                     );
                   }
                 }
@@ -173,8 +176,8 @@ export class ApiSpecValidator {
                   'Implement strict input validation',
                   'Whitelist only expected fields',
                   'Reject requests with unexpected properties',
-                ]
-              )
+                ],
+              ),
             );
           }
         }
@@ -201,13 +204,14 @@ export class ApiSpecValidator {
             'Add rate-limit headers to responses (X-RateLimit-Limit, X-RateLimit-Remaining)',
             'Implement rate limiting in the API gateway',
             'Return 429 Too Many Requests when limits exceeded',
-          ]
-        )
+          ],
+        ),
       );
     }
 
     // 4. Check for missing CORS documentation
-    const hasCorsDocs = spec.servers?.some((s) => s.url?.includes('cors')) ||
+    const hasCorsDocs =
+      spec.servers?.some((s) => s.url?.includes('cors')) ||
       spec.info.description?.toLowerCase().includes('cors') ||
       false;
 
@@ -227,13 +231,14 @@ export class ApiSpecValidator {
             'Set appropriate Access-Control-Allow-Origin headers',
             'Avoid wildcard origins with credentials',
             'Document CORS preflight behavior',
-          ]
-        )
+          ],
+        ),
       );
     }
 
     // 5. Check for missing error documentation
-    const needsErrorDocs = !spec.info.description?.toLowerCase().includes('error') ||
+    const needsErrorDocs =
+      !spec.info.description?.toLowerCase().includes('error') ||
       !spec.info.description?.toLowerCase().includes('exception');
 
     if (needsErrorDocs) {
@@ -252,8 +257,8 @@ export class ApiSpecValidator {
             'Avoid exposing stack traces or internal details',
             'Return generic error messages to clients',
             'Log detailed errors server-side only',
-          ]
-        )
+          ],
+        ),
       );
     }
 
@@ -269,8 +274,12 @@ export class ApiSpecValidator {
           undefined,
           undefined,
           'Missing info.version field',
-          ['Add version to OpenAPI spec (info.version)', 'Use semantic versioning', 'Document breaking changes']
-        )
+          [
+            'Add version to OpenAPI spec (info.version)',
+            'Use semantic versioning',
+            'Document breaking changes',
+          ],
+        ),
       );
     }
 
@@ -293,8 +302,8 @@ export class ApiSpecValidator {
                 `Add 'required' array to schema ${schemaName}`,
                 'Define which fields are mandatory',
                 'Validate required fields at API boundaries',
-              ]
-            )
+              ],
+            ),
           );
         }
       }
@@ -304,11 +313,21 @@ export class ApiSpecValidator {
   }
 
   private isSensitiveEndpoint(path: string): boolean {
-    const sensitivePatterns = ['/api/users', '/api/auth', '/api/admin', '/api/settings', '/api/secrets'];
+    const sensitivePatterns = [
+      '/api/users',
+      '/api/auth',
+      '/api/admin',
+      '/api/settings',
+      '/api/secrets',
+    ];
     return sensitivePatterns.some((pattern) => path.toLowerCase().startsWith(pattern));
   }
 
-  private async testEndpoint(endpoint: string, method: string, path: string): Promise<ApiSecurityFinding[]> {
+  private async testEndpoint(
+    endpoint: string,
+    method: string,
+    path: string,
+  ): Promise<ApiSecurityFinding[]> {
     const findings: ApiSecurityFinding[] = [];
     const methodUpper = method.toUpperCase();
 
@@ -321,7 +340,7 @@ export class ApiSpecValidator {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Origin': 'http://test-origin.example.com',
+          Origin: 'http://test-origin.example.com',
         },
       });
       clearTimeout(timeout);
@@ -346,8 +365,8 @@ export class ApiSpecValidator {
               'Add authentication middleware to this endpoint',
               'Validate Authorization header before processing',
               'Return 401 Unauthorized for unauthenticated requests',
-            ]
-          )
+            ],
+          ),
         );
       }
 
@@ -368,10 +387,10 @@ export class ApiSpecValidator {
               [
                 'Return generic error messages to clients',
                 'Log detailed errors server-side only',
-                'Don\'t expose stack traces in HTTP responses',
+                "Don't expose stack traces in HTTP responses",
                 'Use error codes instead of error messages',
-              ]
-            )
+              ],
+            ),
           );
         }
       }
@@ -395,8 +414,8 @@ export class ApiSpecValidator {
                 'Set specific allowed origins instead of *',
                 'Never combine * origin with credentials',
                 'Use Access-Control-Allow-Origin: https://trusted-domain.com',
-              ]
-            )
+              ],
+            ),
           );
         }
       }
@@ -417,8 +436,8 @@ export class ApiSpecValidator {
               'Add X-RateLimit-Limit header to responses',
               'Include X-RateLimit-Remaining to show remaining quota',
               'Return 429 Too Many Requests when limit exceeded',
-            ]
-          )
+            ],
+          ),
         );
       }
     } catch (err) {
@@ -439,8 +458,8 @@ export class ApiSpecValidator {
               'Optimize endpoint performance',
               'Add caching for frequently accessed data',
               'Consider pagination for large datasets',
-            ]
-          )
+            ],
+          ),
         );
       }
     }
@@ -452,7 +471,7 @@ export class ApiSpecValidator {
     res: Response,
     endpoint: string,
     method: string,
-    path: string
+    path: string,
   ): ApiSecurityFinding[] {
     const findings: ApiSecurityFinding[] = [];
     const requiredHeaders = [
@@ -476,8 +495,8 @@ export class ApiSpecValidator {
             [
               `Add ${header.name} header to all responses`,
               'Configure in web server or application middleware',
-            ]
-          )
+            ],
+          ),
         );
       }
     }

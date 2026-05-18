@@ -17,7 +17,8 @@ export class SupplyChainAdapter implements ScannerAdapter {
   private mongoClient: MongoClient | null = null;
 
   constructor(config?: { mongoUrl?: string }) {
-    this.mongoUrl = config?.mongoUrl || process.env.DATABASE_URL || 'mongodb://localhost:27017/uspservice';
+    this.mongoUrl =
+      config?.mongoUrl || process.env.DATABASE_URL || 'mongodb://localhost:27017/uspservice';
   }
 
   private async getMongoClient(): Promise<MongoClient> {
@@ -74,17 +75,14 @@ export class SupplyChainAdapter implements ScannerAdapter {
       const scans = db.collection('Scan');
       const findings = db.collection('Finding');
 
-      const recentScan = await scans
-        .findOne(
-          { tool: 'sca', asset, status: 'complete' },
-          { sort: { completedAt: -1 } }
-        );
+      const recentScan = await scans.findOne(
+        { tool: 'sca', asset, status: 'complete' },
+        { sort: { completedAt: -1 } },
+      );
 
       if (!recentScan) return [];
 
-      const scanFindings = await findings
-        .find({ scanId: recentScan._id })
-        .toArray();
+      const scanFindings = await findings.find({ scanId: recentScan._id }).toArray();
 
       const purls = new Set<string>();
       for (const finding of scanFindings) {
@@ -108,34 +106,37 @@ export class SupplyChainAdapter implements ScannerAdapter {
     const scan = this.activeScan.get(scanId);
     if (!scan || scan.report.threats.length === 0) return [];
 
-    return scan.report.threats.map((threat) => ({
-      id: randomUUID(),
-      tool: 'supply-chain' as const,
-      severity: threat.severity,
-      cvss: null,
-      cve: null,
-      cwe: null,
-      title: `${threat.threatType}: ${threat.packageName}@${threat.version}`,
-      asset: 'dependencies',
-      status: 'open' as const,
-      fixVersion: null,
-      firstSeen: scan.report.generatedAt,
-      lastSeen: scan.report.generatedAt,
-      remediationSteps: this.getRemediationSteps(threat.threatType),
-      references: threat.advisoryUrl ? [{ label: 'Advisory', url: threat.advisoryUrl }] : [],
-      evidence: {
-        threatType: threat.threatType,
-        packageName: threat.packageName,
-        version: threat.version,
-        purl: threat.purl,
-        suspectedTargetPackage: threat.suspectedTargetPackage,
-        editDistance: threat.editDistance,
-        lastPublishDate: threat.lastPublishDate,
-        daysSinceLastPublish: threat.daysSinceLastPublish,
-        confidence: threat.confidence,
-      },
-      scanId: randomUUID(),
-    } as UnifiedFinding));
+    return scan.report.threats.map(
+      (threat) =>
+        ({
+          id: randomUUID(),
+          tool: 'supply-chain' as const,
+          severity: threat.severity,
+          cvss: null,
+          cve: null,
+          cwe: null,
+          title: `${threat.threatType}: ${threat.packageName}@${threat.version}`,
+          asset: 'dependencies',
+          status: 'open' as const,
+          fixVersion: null,
+          firstSeen: scan.report.generatedAt,
+          lastSeen: scan.report.generatedAt,
+          remediationSteps: this.getRemediationSteps(threat.threatType),
+          references: threat.advisoryUrl ? [{ label: 'Advisory', url: threat.advisoryUrl }] : [],
+          evidence: {
+            threatType: threat.threatType,
+            packageName: threat.packageName,
+            version: threat.version,
+            purl: threat.purl,
+            suspectedTargetPackage: threat.suspectedTargetPackage,
+            editDistance: threat.editDistance,
+            lastPublishDate: threat.lastPublishDate,
+            daysSinceLastPublish: threat.daysSinceLastPublish,
+            confidence: threat.confidence,
+          },
+          scanId: randomUUID(),
+        }) as UnifiedFinding,
+    );
   }
 
   async store(findings: UnifiedFinding[]): Promise<void> {
@@ -214,7 +215,8 @@ export class SupplyChainAdapter implements ScannerAdapter {
         threatType: 'unmaintained' as const,
         severity: 'medium' as const,
         confidence: 'MEDIUM' as const,
-        description: 'lodash is still maintained but has reduced update frequency. Evaluate if update is necessary.',
+        description:
+          'lodash is still maintained but has reduced update frequency. Evaluate if update is necessary.',
         lastPublishDate: '2021-02-04',
         daysSinceLastPublish: 1200,
       },
@@ -225,7 +227,8 @@ export class SupplyChainAdapter implements ScannerAdapter {
         threatType: 'typosquatting' as const,
         severity: 'high' as const,
         confidence: 'HIGH' as const,
-        description: 'Package name "requests" resembles popular package "request" (edit distance: 1).',
+        description:
+          'Package name "requests" resembles popular package "request" (edit distance: 1).',
         suspectedTargetPackage: 'request',
         editDistance: 1,
       },
@@ -236,7 +239,8 @@ export class SupplyChainAdapter implements ScannerAdapter {
         threatType: 'dependency-confusion' as const,
         severity: 'medium' as const,
         confidence: 'MEDIUM' as const,
-        description: 'Scoped package uses scope "@company-internal". Verify scope ownership to prevent dependency confusion attacks.',
+        description:
+          'Scoped package uses scope "@company-internal". Verify scope ownership to prevent dependency confusion attacks.',
       },
     ];
 

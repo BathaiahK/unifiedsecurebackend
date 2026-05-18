@@ -1,4 +1,9 @@
-export type SupplyChainThreatType = 'typosquatting' | 'dependency-confusion' | 'unmaintained' | 'malicious-advisory' | 'namespace-jacking';
+export type SupplyChainThreatType =
+  | 'typosquatting'
+  | 'dependency-confusion'
+  | 'unmaintained'
+  | 'malicious-advisory'
+  | 'namespace-jacking';
 
 export interface SupplyChainThreat {
   packageName: string;

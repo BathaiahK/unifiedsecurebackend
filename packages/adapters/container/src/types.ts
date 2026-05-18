@@ -193,7 +193,11 @@ export interface ContainerPendingScan {
   scanId: string;
   image: string;
   startTime: number;
-  promise: Promise<{ findings: any[]; report: ContainerScanReport; sbom: Record<string, unknown> | null }>;
+  promise: Promise<{
+    findings: any[];
+    report: ContainerScanReport;
+    sbom: Record<string, unknown> | null;
+  }>;
 }
 
 export interface ContainerAdapterConfig {

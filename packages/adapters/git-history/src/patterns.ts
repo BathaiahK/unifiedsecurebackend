@@ -55,7 +55,8 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
     id: 'aws_secret_key',
     name: 'AWS Secret Access Key',
     severity: 'critical',
-    regex: /(aws_secret_access_key\s*=\s*|AWS_SECRET_ACCESS_KEY\s*=\s*|aws_secret\s*=\s*)(['"]?)([A-Za-z0-9/+=]{40})/,
+    regex:
+      /(aws_secret_access_key\s*=\s*|AWS_SECRET_ACCESS_KEY\s*=\s*|aws_secret\s*=\s*)(['"]?)([A-Za-z0-9/+=]{40})/,
     keywords: ['aws_secret', 'aws_secret_access_key'],
     entropyThreshold: 4.5,
     secretCategory: 'cloud-credential',
@@ -394,7 +395,8 @@ export const SECRET_PATTERNS: readonly SecretPattern[] = [
     id: 'high_entropy_string',
     name: 'High Entropy String',
     severity: 'high',
-    regex: /((?:password|secret|key|token|credential|api_key|apikey|access_key|private_key|auth)\s*[=:]\s*['"]?)([A-Za-z0-9+/=_\-]{20,})(['"]?)/i,
+    regex:
+      /((?:password|secret|key|token|credential|api_key|apikey|access_key|private_key|auth)\s*[=:]\s*['"]?)([A-Za-z0-9+/=_\-]{20,})(['"]?)/i,
     keywords: ['password', 'secret', 'key', 'token', 'api_key', 'credential'],
     entropyThreshold: 4.5,
     secretCategory: 'entropy-string',
@@ -441,5 +443,5 @@ export const KNOWN_FALSE_POSITIVES = new Set([
 ]);
 
 export function shouldSkipPath(filePath: string): boolean {
-  return SKIP_PATHS.some(pattern => pattern.test(filePath));
+  return SKIP_PATHS.some((pattern) => pattern.test(filePath));
 }

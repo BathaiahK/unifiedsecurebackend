@@ -3,9 +3,9 @@ import { enrichFromNvd } from './nvd-client.js';
 import { enrichFromOsv } from './osv-client.js';
 
 export interface RemediationEngineConfig {
-  nvdApiKey?:  string;
-  nvdApiUrl?:  string;
-  osvApiUrl?:  string;
+  nvdApiKey?: string;
+  nvdApiUrl?: string;
+  osvApiUrl?: string;
   concurrency?: number;
 }
 

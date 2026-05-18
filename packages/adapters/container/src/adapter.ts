@@ -1,6 +1,11 @@
 import { randomUUID } from 'crypto';
 import type { ScanConfig, ScanStatus, UnifiedFinding, ScannerAdapter } from '@usp/schema';
-import type { ContainerAdapterConfig, ContainerPendingScan, ContainerScanReport, TrivyReport } from './types.js';
+import type {
+  ContainerAdapterConfig,
+  ContainerPendingScan,
+  ContainerScanReport,
+  TrivyReport,
+} from './types.js';
 import { TrivyClient, type TrivyClientConfig } from './client.js';
 import { ContainerSimulator } from './simulator.js';
 import { normalizeContainerFindings } from './normalize.js';
@@ -67,9 +72,31 @@ export class ContainerAdapter implements ScannerAdapter {
         // 1. Run parallel scans based on mode
         const [vulnReport, cisReport, licenseReport, sbomReport] = await Promise.all([
           this.backend.scan(image),
-          scanMode === 'full' ? (this.backend instanceof TrivyClient ? this.backend.scanCisBenchmark(image) : Promise.resolve({ schemaVersion: 2, artifactType: 'image', artifactName: image, results: [] })) : Promise.resolve(null),
-          scanMode !== 'vuln-only' ? (this.backend instanceof TrivyClient ? this.backend.scanWithLicenses(image) : Promise.resolve({ schemaVersion: 2, artifactType: 'image', artifactName: image, results: [] })) : Promise.resolve(null),
-          scanMode === 'full' ? (this.backend instanceof TrivyClient ? this.backend.generateSbom(image) : Promise.resolve(null)) : Promise.resolve(null),
+          scanMode === 'full'
+            ? this.backend instanceof TrivyClient
+              ? this.backend.scanCisBenchmark(image)
+              : Promise.resolve({
+                  schemaVersion: 2,
+                  artifactType: 'image',
+                  artifactName: image,
+                  results: [],
+                })
+            : Promise.resolve(null),
+          scanMode !== 'vuln-only'
+            ? this.backend instanceof TrivyClient
+              ? this.backend.scanWithLicenses(image)
+              : Promise.resolve({
+                  schemaVersion: 2,
+                  artifactType: 'image',
+                  artifactName: image,
+                  results: [],
+                })
+            : Promise.resolve(null),
+          scanMode === 'full'
+            ? this.backend instanceof TrivyClient
+              ? this.backend.generateSbom(image)
+              : Promise.resolve(null)
+            : Promise.resolve(null),
         ]);
 
         // Merge results
@@ -104,10 +131,7 @@ export class ContainerAdapter implements ScannerAdapter {
         }
 
         // 5. Fetch EPSS and KEV data in parallel
-        const [epssMap, kevSet] = await Promise.all([
-          fetchEpssScores(cves),
-          fetchKevCatalog(),
-        ]);
+        const [epssMap, kevSet] = await Promise.all([fetchEpssScores(cves), fetchKevCatalog()]);
 
         // 6. Normalize findings with EPSS/KEV augmentation
         const findings = normalizeContainerFindings(mergedResults, image, scanId, epssMap, kevSet);

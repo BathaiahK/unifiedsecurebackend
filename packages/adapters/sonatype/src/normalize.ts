@@ -250,8 +250,7 @@ export function normalizeSupplyChainThreat(
   const threat = component.supplyChainThreat;
 
   const title = `Supply chain threat: ${componentName}@${version} — ${threat.type}`;
-  const severity: UnifiedFinding['severity'] =
-    threat.confidence === 'HIGH' ? 'high' : 'medium';
+  const severity: UnifiedFinding['severity'] = threat.confidence === 'HIGH' ? 'high' : 'medium';
 
   const remediationSteps: string[] = [
     `${threat.description}`,

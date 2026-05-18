@@ -15,14 +15,18 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
   app.post('/api/scans', async (req, reply) => {
     const config = ScanConfigSchema.safeParse(req.body);
     if (!config.success) {
-      return reply.status(400).send({ error: 'Invalid scan config', details: config.error.flatten() });
+      return reply
+        .status(400)
+        .send({ error: 'Invalid scan config', details: config.error.flatten() });
     }
 
     let adapter;
     try {
       adapter = getAdapter(config.data.tool);
     } catch {
-      return reply.status(400).send({ error: `Adapter not available for tool: ${config.data.tool}` });
+      return reply
+        .status(400)
+        .send({ error: `Adapter not available for tool: ${config.data.tool}` });
     }
 
     const scanId = randomUUID();
@@ -61,14 +65,16 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': 'true',
     });
 
     let closed = false;
-    req.raw.on('close', () => { closed = true; });
+    req.raw.on('close', () => {
+      closed = true;
+    });
 
     const send = (data: object) => {
       if (!closed) res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -118,7 +124,9 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
           return;
         }
         if (!closed) {
-          setTimeout(() => { poll().catch(() => res.end()); }, delay);
+          setTimeout(() => {
+            poll().catch(() => res.end());
+          }, delay);
           delay = Math.min(delay * 1.5, MAX_DELAY);
         }
       } catch {
@@ -159,8 +167,14 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const [currentFindings, previousFindings] = await Promise.all([
-      prisma.finding.findMany({ where: { scanId: currentScan.id }, select: { id: true, cve: true, asset: true } }),
-      prisma.finding.findMany({ where: { scanId: previousScan.id }, select: { id: true, cve: true, asset: true } }),
+      prisma.finding.findMany({
+        where: { scanId: currentScan.id },
+        select: { id: true, cve: true, asset: true },
+      }),
+      prisma.finding.findMany({
+        where: { scanId: previousScan.id },
+        select: { id: true, cve: true, asset: true },
+      }),
     ]);
 
     const prevKeys = new Set(previousFindings.map((f) => `${f.cve}:${f.asset}`));
@@ -224,7 +238,7 @@ async function runScanPipeline(
   try {
     // ── Step 1: fetch real package coordinates from the project repo ──────────
     const repoUrl = config.options?.['repoUrl'] as string | undefined;
-    const branch  = (config.options?.['branch'] as string | undefined) ?? 'main';
+    const branch = (config.options?.['branch'] as string | undefined) ?? 'main';
     let purls: string[] = (config.options?.['purls'] as string[] | undefined) ?? [];
 
     if (repoUrl && purls.length === 0) {
@@ -278,8 +292,8 @@ async function runScanPipeline(
     // Enrich with NVD CVSS scores + OSV fix versions / advisory URLs
     const remConfig = getRemediationConfig();
     const enrichConfig: RemediationEngineConfig = {
-      nvdApiUrl:   remConfig.nvdApiUrl,
-      osvApiUrl:   remConfig.osvApiUrl,
+      nvdApiUrl: remConfig.nvdApiUrl,
+      osvApiUrl: remConfig.osvApiUrl,
       concurrency: remConfig.concurrency,
     };
     if (remConfig.nvdApiKey) enrichConfig.nvdApiKey = remConfig.nvdApiKey;
@@ -288,22 +302,22 @@ async function runScanPipeline(
     // Persist findings in MongoDB
     if (enriched.length > 0) {
       const findings = enriched.map((f) => ({
-        _id:              f.id,
-        tool:             f.tool,
-        severity:         f.severity,
-        cvss:             f.cvss,
-        cve:              f.cve,
-        cwe:              f.cwe,
-        title:            f.title,
-        asset:            f.asset,
-        status:           f.status,
-        fixVersion:       f.fixVersion,
-        firstSeen:        new Date(f.firstSeen),
-        lastSeen:         new Date(f.lastSeen),
+        _id: f.id,
+        tool: f.tool,
+        severity: f.severity,
+        cvss: f.cvss,
+        cve: f.cve,
+        cwe: f.cwe,
+        title: f.title,
+        asset: f.asset,
+        status: f.status,
+        fixVersion: f.fixVersion,
+        firstSeen: new Date(f.firstSeen),
+        lastSeen: new Date(f.lastSeen),
         remediationSteps: f.remediationSteps,
-        references:       f.references,
-        evidence:         f.evidence,
-        scanId:           f.scanId,
+        references: f.references,
+        evidence: f.evidence,
+        scanId: f.scanId,
       }));
       if (findings.length > 0) {
         await db.collection('Finding').insertMany(findings);
@@ -312,63 +326,81 @@ async function runScanPipeline(
 
     // Compute severity counts for the scan record
     const critical = enriched.filter((f) => f.severity === 'critical').length;
-    const high     = enriched.filter((f) => f.severity === 'high').length;
-    const medium   = enriched.filter((f) => f.severity === 'medium').length;
+    const high = enriched.filter((f) => f.severity === 'high').length;
+    const medium = enriched.filter((f) => f.severity === 'medium').length;
     const passedGate = critical === 0 && high === 0;
 
     // Duck-type call tool-specific report methods not on the ScannerAdapter interface
     let meta: Record<string, unknown> = {
       // Track how many real packages were scanned (0 = simulator data was used)
       purlsScanned: purls.length,
-      repoUrl:      repoUrl ?? null,
-      branch:       branch,
+      repoUrl: repoUrl ?? null,
+      branch: branch,
       externalScanId: externalScanId,
-      purls,        // Store for SBOM generation
+      purls, // Store for SBOM generation
     };
     const adapterAny = adapter as Record<string, unknown>;
     if (typeof adapterAny['getBOMSummary'] === 'function') {
       // BlackDuck: BOM + license + BDSA summary
-      const bom = await (adapterAny['getBOMSummary'] as (id: string) => Promise<unknown>)(externalScanId);
+      const bom = await (adapterAny['getBOMSummary'] as (id: string) => Promise<unknown>)(
+        externalScanId,
+      );
       if (bom) meta = { ...meta, bom };
     }
     if (typeof adapterAny['getApplicationReport'] === 'function') {
       // Sonatype: golden versions, reachability, quality risk, supply chain threats
-      const report = await (adapterAny['getApplicationReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      const report = await (adapterAny['getApplicationReport'] as (id: string) => Promise<unknown>)(
+        externalScanId,
+      );
       if (report) meta = { ...meta, report };
     }
     if (typeof adapterAny['getGitHistoryReport'] === 'function') {
       // Git History: secrets by category/severity, oldest/newest commit with secret
-      const ghReport = await (adapterAny['getGitHistoryReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      const ghReport = await (
+        adapterAny['getGitHistoryReport'] as (id: string) => Promise<unknown>
+      )(externalScanId);
       if (ghReport) meta = { ...meta, gitHistoryReport: ghReport };
     }
     if (typeof adapterAny['getSupplyChainReport'] === 'function') {
       // SCA: unmaintained packages, typosquatting, duplicate version conflicts
-      const scReport = (adapterAny['getSupplyChainReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      const scReport = (
+        adapterAny['getSupplyChainReport'] as (id: string) => Record<string, unknown> | null
+      )(externalScanId);
       if (scReport) meta = { ...meta, supplyChainReport: scReport };
     }
     if (typeof adapterAny['getSastReport'] === 'function') {
       // SAST: rule hit breakdown, files scanned, top vulnerabilities
-      const sastReport = (adapterAny['getSastReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      const sastReport = (
+        adapterAny['getSastReport'] as (id: string) => Record<string, unknown> | null
+      )(externalScanId);
       if (sastReport) meta = { ...meta, sastReport };
     }
     if (typeof adapterAny['getDastReport'] === 'function') {
       // DAST: endpoints tested, requests sent, vulnerabilities found
-      const dastReport = (adapterAny['getDastReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      const dastReport = (
+        adapterAny['getDastReport'] as (id: string) => Record<string, unknown> | null
+      )(externalScanId);
       if (dastReport) meta = { ...meta, dastReport };
     }
     if (typeof adapterAny['getApiSecurityReport'] === 'function') {
       // API Security: OpenAPI spec validation, API design security issues
-      const apiSecurityReport = (adapterAny['getApiSecurityReport'] as (id: string) => Record<string, unknown> | null)(externalScanId);
+      const apiSecurityReport = (
+        adapterAny['getApiSecurityReport'] as (id: string) => Record<string, unknown> | null
+      )(externalScanId);
       if (apiSecurityReport) meta = { ...meta, apiSecurityReport };
     }
     if (typeof adapterAny['getContainerReport'] === 'function') {
       // Container Security: image scan results, OS info, packages, config issues, runtime threats
-      const containerReport = await (adapterAny['getContainerReport'] as (id: string) => Promise<unknown>)(externalScanId);
+      const containerReport = await (
+        adapterAny['getContainerReport'] as (id: string) => Promise<unknown>
+      )(externalScanId);
       if (containerReport) meta = { ...meta, containerReport };
     }
     if (typeof adapterAny['getContainerSbom'] === 'function') {
       // Container Security: CycloneDX SBOM
-      const containerSbom = await (adapterAny['getContainerSbom'] as (id: string) => Promise<unknown>)(externalScanId);
+      const containerSbom = await (
+        adapterAny['getContainerSbom'] as (id: string) => Promise<unknown>
+      )(externalScanId);
       if (containerSbom) meta = { ...meta, containerSbom };
     }
 
