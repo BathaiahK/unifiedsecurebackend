@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @usp/api dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm db:generate && pnpm -r typecheck",
     "db:generate": "pnpm --filter @usp/api db:generate",
     "db:push": "pnpm --filter @usp/api db:push"
   },
