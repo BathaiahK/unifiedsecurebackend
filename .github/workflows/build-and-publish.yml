@@ -31,7 +31,6 @@ jobs:
         run: |
           echo "Event name: ${{ github.event_name }}"
           echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
-          echo "GitHub event: ${{ toJson(github.event) }}"
 
           # Always proceed on manual trigger, check CI status on workflow_run
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
