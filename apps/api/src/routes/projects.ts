@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyPluginAsync } from 'fastify';
+import { ObjectId } from 'mongodb';
 import { prisma, mongoClient } from '../db.js';
 
 const CreateProjectSchema = z.object({
@@ -59,7 +60,7 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
         ...body.data,
         createdAt,
       };
-      return reply.status(201).send(maskToken(project));
+      return reply.status(201).send(maskToken(project as any));
     } catch (err: unknown) {
       const e = err as any;
       if (e?.code === 11000 || e?.message?.includes('duplicate')) {
@@ -82,13 +83,13 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
       const db = mongoClient.db();
       const result = await db
         .collection('Project')
-        .updateOne({ _id: req.params.id }, { $set: body.data });
+        .updateOne({ _id: req.params.id as any }, { $set: body.data });
       if (result.matchedCount === 0) {
         return reply.status(404).send({ error: 'Project not found' });
       }
-      const project = await db.collection('Project').findOne({ _id: req.params.id });
+      const project = await db.collection('Project').findOne({ _id: req.params.id as any });
       const { _id, ...rest } = project || {};
-      return reply.send(maskToken({ id: _id, ...rest }));
+      return reply.send(maskToken({ id: _id, ...rest } as any));
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
     }
@@ -97,7 +98,7 @@ export const projectsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/api/projects/:id', async (req, reply) => {
     try {
       const db = mongoClient.db();
-      const result = await db.collection('Project').deleteOne({ _id: req.params.id });
+      const result = await db.collection('Project').deleteOne({ _id: req.params.id as any });
       if (result.deletedCount === 0) {
         return reply.status(404).send({ error: 'Project not found' });
       }

@@ -15,7 +15,7 @@ export const sbomRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const db = mongoClient.db();
-    const scan = await db.collection('Scan').findOne({ _id: id });
+    const scan = await db.collection('Scan').findOne({ _id: id as any });
     if (!scan) {
       return reply.status(404).send({ error: 'Scan not found' });
     }

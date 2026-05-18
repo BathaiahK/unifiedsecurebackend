@@ -78,7 +78,7 @@ export async function parseDependencies(repoPath: string): Promise<string[]> {
       const content = pyprojectResult.value;
       const depMatch = content.match(/\[tool\.poetry\.dependencies\]([\s\S]*?)(?:\[|$)/);
 
-      if (depMatch) {
+      if (depMatch && depMatch[1]) {
         const depsSection = depMatch[1];
         const lines = depsSection.split('\n');
 

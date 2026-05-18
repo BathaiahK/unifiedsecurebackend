@@ -55,10 +55,10 @@ function parseRepoUrl(raw: string): ParsedRepo {
 
   let m: RegExpMatchArray | null;
 
-  if ((m = url.match(githubRe))) return { host: 'github', ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(gitlabRe))) return { host: 'gitlab', ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(bitbucketRe))) return { host: 'bitbucket', ownerRepo: m[2], baseUrl: m[1] };
-  if ((m = url.match(selfGlRe)))
+  if ((m = url.match(githubRe)) && m[1] && m[2]) return { host: 'github', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(gitlabRe)) && m[1] && m[2]) return { host: 'gitlab', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(bitbucketRe)) && m[1] && m[2]) return { host: 'bitbucket', ownerRepo: m[2], baseUrl: m[1] };
+  if ((m = url.match(selfGlRe)) && m[1] && m[2])
     return { host: 'gitlab-self-hosted', ownerRepo: m[2], baseUrl: m[1] };
 
   throw new Error(`Unrecognised git URL format: ${raw}`);

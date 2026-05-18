@@ -169,11 +169,10 @@ export class ScaAdapter implements ScannerAdapter {
         scanId,
         'running',
         83,
-        'complete-analysis',
+        'complete',
         `Found ${supplyChainReport.threats.length} supply chain threat(s), analysis complete`,
         {
           licenseRisks: pending.licenseRisks,
-          supplyChainThreats: supplyChainReport.threats.length,
         },
       );
 

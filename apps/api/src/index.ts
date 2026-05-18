@@ -92,7 +92,7 @@ registerAdapter(apiSecurityAdapter);
 app.log.info('API Security adapter registered (OpenAPI validation & auto-discovery)');
 
 // Container Security: Static image scanning with Trivy CLI
-const containerAdapter = new ContainerAdapter(scannerConfigs.container ?? undefined);
+const containerAdapter = new ContainerAdapter(scannerConfigs.container as any);
 registerAdapter(containerAdapter);
 if (containerAdapter.isSimulated) {
   app.log.warn(
@@ -121,7 +121,7 @@ try {
   await mongoClient.connect();
   app.log.info('MongoDB connection pool warmed');
 } catch (err) {
-  app.log.warn('Failed to pre-warm MongoDB connection:', err);
+  app.log.warn(`Failed to pre-warm MongoDB connection: ${String(err)}`);
 }
 
 try {

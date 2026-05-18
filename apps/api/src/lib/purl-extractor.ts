@@ -212,10 +212,10 @@ function extractGradle(content: string, purls: Set<string>) {
   const re = /(?:implementation|api|compileOnly|runtimeOnly)\s*[("']([^"'()]+)[)"']/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(content)) !== null) {
-    const parts = m[1].split(':');
+    const parts = m[1]!.split(':');
     if (parts.length === 3) {
       const [group, artifact, version] = parts;
-      if (/^\d/.test(version)) {
+      if (version && /^\d/.test(version)) {
         purls.add(`pkg:maven/${group}/${artifact}@${version}`);
       }
     }
@@ -230,10 +230,10 @@ function extractRequirements(content: string, purls: Set<string>) {
     if (!line || line.startsWith('#') || line.startsWith('-')) continue;
     // "Flask==2.3.0", "requests>=2.28.0", "numpy~=1.24.0", "package[extra]==1.0"
     const m = line.match(/^([A-Za-z0-9_\-.]+)(?:\[[^\]]*\])?[=~!><]+(\d[^\s;#,]*)/);
-    if (m) {
+    if (m && m[1] && m[2]) {
       // Normalise name: lowercase, replace _ and - with -
-      const name = m[1].toLowerCase().replace(/[-_]+/g, '-');
-      purls.add(`pkg:pypi/${name}@${m[2]}`);
+      const name = m[1]!.toLowerCase().replace(/[-_]+/g, '-');
+      purls.add(`pkg:pypi/${name}@${m[2]!}`);
     }
   }
 }
@@ -275,11 +275,11 @@ function extractGoSum(content: string, purls: Set<string>) {
 function extractGemfileLock(content: string, purls: Set<string>) {
   // Specs section starts after "GEM\n  remote: ...\n  specs:" and ends at blank line
   const specsMatch = content.match(/\bspecs:\n([\s\S]*?)(?:\n\n|\nBUNDLED|$)/);
-  if (!specsMatch) return;
+  if (!specsMatch || !specsMatch[1]) return;
   for (const line of specsMatch[1].split('\n')) {
     // 4-space indent = direct gem: "    rails (7.0.0)"
     const m = line.match(/^    ([a-zA-Z0-9_\-.]+) \(([^)]+)\)/);
-    if (m) {
+    if (m && m[1] && m[2]) {
       purls.add(`pkg:gem/${m[1]}@${m[2]}`);
     }
   }

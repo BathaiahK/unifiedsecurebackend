@@ -32,7 +32,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
     const scanId = randomUUID();
     const db = mongoClient.db();
     await db.collection('Scan').insertOne({
-      _id: scanId,
+      _id: scanId as any,
       tool: config.data.tool,
       asset: config.data.asset,
       status: 'queued',
@@ -233,7 +233,7 @@ async function runScanPipeline(
   adapter: import('@usp/schema').ScannerAdapter,
 ): Promise<void> {
   const db = mongoClient.db();
-  await db.collection('Scan').updateOne({ _id: scanId }, { $set: { status: 'running' } });
+  await db.collection('Scan').updateOne({ _id: scanId as any }, { $set: { status: 'running' } });
 
   try {
     // ── Step 1: fetch real package coordinates from the project repo ──────────
@@ -320,7 +320,7 @@ async function runScanPipeline(
         scanId: f.scanId,
       }));
       if (findings.length > 0) {
-        await db.collection('Finding').insertMany(findings);
+        await db.collection('Finding').insertMany(findings as any);
       }
     }
 
@@ -339,7 +339,7 @@ async function runScanPipeline(
       externalScanId: externalScanId,
       purls, // Store for SBOM generation
     };
-    const adapterAny = adapter as Record<string, unknown>;
+    const adapterAny = adapter as any as Record<string, unknown>;
     if (typeof adapterAny['getBOMSummary'] === 'function') {
       // BlackDuck: BOM + license + BDSA summary
       const bom = await (adapterAny['getBOMSummary'] as (id: string) => Promise<unknown>)(
@@ -405,7 +405,7 @@ async function runScanPipeline(
     }
 
     await db.collection('Scan').updateOne(
-      { _id: scanId },
+      { _id: scanId as any },
       {
         $set: {
           status: 'complete',
@@ -419,7 +419,7 @@ async function runScanPipeline(
       },
     );
   } catch (err) {
-    await db.collection('Scan').updateOne({ _id: scanId }, { $set: { status: 'failed' } });
+    await db.collection('Scan').updateOne({ _id: scanId as any }, { $set: { status: 'failed' } });
     throw err;
   }
 }
