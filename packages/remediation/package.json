@@ -2,11 +2,12 @@
   "name": "@usp/remediation",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }

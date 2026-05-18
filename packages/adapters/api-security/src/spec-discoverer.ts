@@ -40,7 +40,7 @@ export class ApiSpecDiscoverer {
 
       // Validate basic OpenAPI structure
       if (data.openapi || data.swagger) {
-        return data as OpenApiSpec;
+        return data as unknown as OpenApiSpec;
       }
 
       return null;
