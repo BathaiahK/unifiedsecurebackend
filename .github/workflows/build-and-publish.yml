@@ -29,12 +29,20 @@ jobs:
       - name: Check CI workflow status
         id: check
         run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "Event name: ${{ github.event_name }}"
+          echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "GitHub event: ${{ toJson(github.event) }}"
+
+          # Always proceed on manual trigger, check CI status on workflow_run
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "passed=true" >> $GITHUB_OUTPUT
-            echo "✅ CI passed or manual trigger"
+            echo "✅ Manual trigger detected - proceeding with build"
+          elif [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "✅ CI workflow passed - proceeding with build"
           else
             echo "passed=false" >> $GITHUB_OUTPUT
-            echo "⚠️ CI did not pass"
+            echo "⚠️ CI workflow did not pass (conclusion: ${{ github.event.workflow_run.conclusion }})"
           fi
 
   build:
@@ -77,10 +85,18 @@ jobs:
       - name: Build API Docker image
         if: steps.gcp-check.outputs.has-wif == 'true'
         run: |
+          echo "Building Docker image..."
+          echo "Registry: ${{ env.REGISTRY }}"
+          echo "Project ID: ${{ secrets.GCP_PROJECT_ID }}"
+          echo "Image: ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest"
+
           docker build -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest \
             -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:$(date +%s) \
             -f apps/api/Dockerfile \
             .
+
+          echo "✅ Docker image built successfully"
+          docker images | grep backend-api
 
       - name: Push API image to Artifact Registry
         if: steps.gcp-check.outputs.has-wif == 'true'
