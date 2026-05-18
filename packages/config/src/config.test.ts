@@ -27,6 +27,7 @@ describe('getScannerConfigs', () => {
       sysdig: null,
       crunch42: null,
       sonatype: null,
+      container: null,
     };
     expect(getConfiguredScanners(partial)).toEqual(['blackduck']);
   });
