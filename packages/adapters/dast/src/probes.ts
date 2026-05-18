@@ -91,7 +91,7 @@ export async function probeSqlInjection(
   try {
     const payloads = ["'", "1' OR '1'='1", "admin' --", "' UNION SELECT NULL --"];
     const testUrl = new URL(targetUrl);
-    testUrl.searchParams.set('id', payloads[0]);
+    testUrl.searchParams.set('id', payloads[0]!);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
