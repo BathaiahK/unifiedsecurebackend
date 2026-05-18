@@ -9,10 +9,10 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 
 # Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm && CI=true pnpm install --frozen-lockfile
 
-# Build the API
-RUN pnpm --filter api build
+# Generate Prisma client and build the API
+RUN CI=true pnpm db:generate && pnpm --filter api build
 
 # Runtime stage
 FROM node:20-alpine
@@ -28,7 +28,7 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN CI=true pnpm install --prod --frozen-lockfile
 
 # Copy built app from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
