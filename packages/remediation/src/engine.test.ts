@@ -9,13 +9,11 @@ vi.mock('./nvd-client.js', () => ({
 }));
 
 vi.mock('./osv-client.js', () => ({
-  enrichFromOsv: vi
-    .fn()
-    .mockResolvedValue({
-      fixVersion: '2.17.1',
-      advisoryUrls: ['https://nvd.nist.gov/CVE-2021-44228'],
-      ecosystem: 'Maven',
-    }),
+  enrichFromOsv: vi.fn().mockResolvedValue({
+    fixVersion: '2.17.1',
+    advisoryUrls: ['https://nvd.nist.gov/CVE-2021-44228'],
+    ecosystem: 'Maven',
+  }),
 }));
 
 const baseFinding: UnifiedFinding = {
