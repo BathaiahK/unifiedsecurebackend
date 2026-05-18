@@ -90,7 +90,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
         const meta = scan.meta as Record<string, unknown>;
         const externalScanId = meta.externalScanId;
         if (typeof externalScanId === 'string' && externalScanId.startsWith('sca-')) {
-          unsubscribe = scaStreamingQueue.subscribe(externalScanId, (event) => {
+          unsubscribe = scaStreamingQueue.subscribe(externalScanId, (event: any) => {
             send(event);
             if (event.status === 'complete' || event.status === 'failed') {
               res.end();
@@ -177,17 +177,17 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       }),
     ]);
 
-    const prevKeys = new Set(previousFindings.map((f) => `${f.cve}:${f.asset}`));
-    const currKeys = new Set(currentFindings.map((f) => `${f.cve}:${f.asset}`));
+    const prevKeys = new Set(previousFindings.map((f: any) => `${f.cve}:${f.asset}`));
+    const currKeys = new Set(currentFindings.map((f: any) => `${f.cve}:${f.asset}`));
 
     const entries = [
-      ...currentFindings.map((f) => ({
+      ...currentFindings.map((f: any) => ({
         findingId: f.id,
         state: prevKeys.has(`${f.cve}:${f.asset}`) ? ('recurring' as const) : ('new' as const),
       })),
       ...previousFindings
-        .filter((f) => !currKeys.has(`${f.cve}:${f.asset}`))
-        .map((f) => ({ findingId: f.id, state: 'resolved' as const })),
+        .filter((f: any) => !currKeys.has(`${f.cve}:${f.asset}`))
+        .map((f: any) => ({ findingId: f.id, state: 'resolved' as const })),
     ];
 
     return {
@@ -207,7 +207,7 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       take: 50,
       include: { _count: { select: { findings: true } } },
     });
-    return scans.map((s) => ({ ...s, findingCount: s._count.findings }));
+    return scans.map((s: any) => ({ ...s, findingCount: s._count.findings }));
   });
 
   // Findings scoped to a single scan — the per-scan vulnerability view

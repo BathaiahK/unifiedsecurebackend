@@ -88,8 +88,8 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
           select: { severity: true, cwe: true, cvss: true },
         });
 
-        const critCount = findings.filter((f) => f.severity === 'critical').length;
-        const highCount = findings.filter((f) => f.severity === 'high').length;
+        const critCount = findings.filter((f: any) => f.severity === 'critical').length;
+        const highCount = findings.filter((f: any) => f.severity === 'high').length;
         const totalCount = findings.length;
 
         let stats: { label: string; value: string; highlight?: 'red' | 'orange' | 'green' }[] = [];
@@ -123,7 +123,7 @@ export const assetsRoutes: FastifyPluginAsync = async (app) => {
         } else if (tool === 'runtime-security') {
           stats = [stat('OS CVEs', String(totalCount), totalCount > 0 ? 'orange' : undefined)];
         } else if (tool === 'dast') {
-          const xssFindings = findings.filter((f) => f.cwe === 'CWE-79').length;
+          const xssFindings = findings.filter((f: any) => f.cwe === 'CWE-79').length;
           stats = [
             stat(
               'Alerts',
