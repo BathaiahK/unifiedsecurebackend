@@ -15,7 +15,7 @@ function createFinding(
   remediation: string[],
   payload?: string,
 ): DastFinding {
-  return {
+  const finding: DastFinding = {
     id: randomUUID(),
     probeName,
     title,
@@ -24,10 +24,15 @@ function createFinding(
     cwe,
     endpoint,
     method,
-    payload,
     evidence,
     remediation,
   };
+
+  if (payload !== undefined) {
+    finding.payload = payload;
+  }
+
+  return finding;
 }
 
 export async function probeSecurityHeaders(

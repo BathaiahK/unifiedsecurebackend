@@ -13,6 +13,13 @@
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@usp/schema": ["packages/schema/src/index.ts"],
+      "@usp/config": ["packages/config/src/index.ts"],
+      "@usp/vuln-db": ["packages/vuln-db/src/index.ts"],
+      "@usp/remediation": ["packages/remediation/src/index.ts"]
+    }
   }
 }
