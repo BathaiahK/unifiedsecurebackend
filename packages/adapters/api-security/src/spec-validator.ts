@@ -42,18 +42,26 @@ function createFinding(
   evidence: string,
   remediation: string[],
 ): ApiSecurityFinding {
-  return {
+  const finding: ApiSecurityFinding = {
     id: randomUUID(),
     category: category as any,
     title,
     description,
     severity,
     cwe,
-    endpoint,
-    method,
     evidence,
     remediation,
   };
+
+  if (endpoint !== undefined) {
+    finding.endpoint = endpoint;
+  }
+
+  if (method !== undefined) {
+    finding.method = method;
+  }
+
+  return finding;
 }
 
 export class ApiSpecValidator {

@@ -36,7 +36,7 @@ export class ApiSpecDiscoverer {
 
       if (!res.ok) return null;
 
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown>;
 
       // Validate basic OpenAPI structure
       if (data.openapi || data.swagger) {
@@ -64,8 +64,8 @@ export class ApiSpecDiscoverer {
       clearTimeout(timeout);
 
       if (res.ok) {
-        const health = await res.json();
-        if (health.service) title = health.service;
+        const health = (await res.json()) as Record<string, unknown>;
+        if (typeof health.service === 'string') title = health.service;
       }
     } catch {
       // Ignore errors, use defaults
