@@ -435,7 +435,7 @@ export async function probeCorsConfig(
         'CWE-942',
         targetUrl,
         'GET',
-        `ACAO: ${acaoHeader}, Allow-Credentials: ${accHeader}`,
+        `ACAO: ${acaoHeader ?? 'not set'}, Allow-Credentials: ${accHeader ?? 'not set'}`,
         [
           'Specify exact allowed origins, not "*"',
           'Use Access-Control-Allow-Origin: specific-domain',
