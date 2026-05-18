@@ -16,9 +16,10 @@ describe('getScannerConfigs', () => {
     expect(configs.sonatype).toBeNull();
   });
 
-  it('getConfiguredScanners returns empty array when none configured', () => {
+  it('getConfiguredScanners returns container when it has defaults', () => {
     const configs = getScannerConfigs();
-    expect(getConfiguredScanners(configs)).toEqual([]);
+    // Container is always configured because trivyPath has a default value
+    expect(getConfiguredScanners(configs)).toEqual(['container']);
   });
 
   it('getConfiguredScanners lists only configured scanners', () => {
