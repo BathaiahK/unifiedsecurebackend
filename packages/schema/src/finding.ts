@@ -35,3 +35,10 @@ export const UnifiedFindingSchema = z.object({
 });
 
 export type UnifiedFinding = z.infer<typeof UnifiedFindingSchema>;
+
+export const MergedFindingSchema = UnifiedFindingSchema.omit({ tool: true }).extend({
+  tools: z.array(ToolSchema),
+  occurrenceCount: z.number().int().positive().default(1),
+});
+
+export type MergedFinding = z.infer<typeof MergedFindingSchema>;
