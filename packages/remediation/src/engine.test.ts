@@ -18,17 +18,19 @@ vi.mock('./osv-client.js', () => ({
 
 const baseFinding: UnifiedFinding = {
   id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  tool: 'blackduck',
+  tool: 'sca',
   severity: 'critical',
   cvss: null,
   cve: 'CVE-2021-44228',
   cwe: null,
+  title: 'Log4j RCE Vulnerability',
   asset: 'payment-service',
   status: 'open',
   fixVersion: null,
   firstSeen: '2024-01-01T00:00:00Z',
   lastSeen: '2024-01-02T00:00:00Z',
   remediationSteps: ['Check dependencies'],
+  references: [],
   evidence: {},
   scanId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
 };
