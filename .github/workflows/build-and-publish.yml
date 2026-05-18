@@ -83,14 +83,19 @@ jobs:
 
       - name: Build API Docker image
         if: steps.gcp-check.outputs.has-wif == 'true'
+        id: docker-build
         run: |
+          TIMESTAMP=$(date +%s)
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+
           echo "Building Docker image..."
           echo "Registry: ${{ env.REGISTRY }}"
           echo "Project ID: ${{ secrets.GCP_PROJECT_ID }}"
           echo "Image: ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest"
+          echo "Timestamp tag: ${TIMESTAMP}"
 
           docker build -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest \
-            -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:$(date +%s) \
+            -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${TIMESTAMP} \
             -f apps/api/Dockerfile \
             .
 
@@ -100,8 +105,10 @@ jobs:
       - name: Push API image to Artifact Registry
         if: steps.gcp-check.outputs.has-wif == 'true'
         run: |
+          TIMESTAMP=${{ steps.docker-build.outputs.timestamp }}
+
           docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest
-          docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:$(date +%s)
+          docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${TIMESTAMP}
           echo "✅ Docker image pushed to Artifact Registry"
 
       - name: Log image details
