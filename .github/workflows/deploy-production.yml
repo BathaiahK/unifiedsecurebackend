@@ -1,0 +1,174 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["Build & Publish Docker Images"]
+    types:
+      - completed
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: 'Image tag to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+env:
+  REGISTRY: us-central1-docker.pkg.dev
+  GCP_REGION: us-central1
+  ENVIRONMENT: production
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify branch protection
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/master" ] || [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "✅ Deploying from protected branch"
+          else
+            echo "❌ Can only deploy from master/main branches"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check GCP credentials
+        id: gcp-check
+        run: |
+          if [ -n "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "has-wif=true" >> $GITHUB_OUTPUT
+            echo "✅ Workload Identity Federation configured"
+          else
+            echo "has-wif=false" >> $GITHUB_OUTPUT
+            echo "⚠️ GCP credentials not configured"
+          fi
+
+      - name: Authenticate to Google Cloud (Workload Identity)
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Skip deployment if no credentials
+        if: steps.gcp-check.outputs.has-wif != 'true'
+        run: |
+          echo "⚠️ GCP credentials not configured - skipping deployment"
+          exit 0
+
+      - name: Set up Google Cloud SDK
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get image tag
+        id: image-tag
+        run: |
+          if [ -z "${{ github.event.inputs.image-tag }}" ]; then
+            TAG="latest"
+          else
+            TAG="${{ github.event.inputs.image-tag }}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Using image tag: ${TAG}"
+
+      - name: Deploy API to Cloud Run
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        run: |
+          set -e
+          echo "Deploying Backend API to Cloud Run..."
+          gcloud run deploy unifiedsecure-backend-api \
+            --image ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${{ steps.image-tag.outputs.tag }} \
+            --platform managed \
+            --region ${{ env.GCP_REGION }} \
+            --service-account ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }} \
+            --set-env-vars NODE_ENV=production,LOG_LEVEL=warn,ENVIRONMENT=production \
+            --set-secrets DATABASE_URL=DATABASE_URL:latest \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 60 \
+            --max-instances 10 \
+            --min-instances 1 \
+            --ingress all \
+            --allow-unauthenticated \
+            --revision-suffix "prod-$(date +%s)"
+          echo "✅ API deployment successful"
+
+      - name: Get API service URL
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        id: api-url
+        run: |
+          sleep 5
+          API_URL=$(gcloud run services describe unifiedsecure-backend-api \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          echo "url=${API_URL}" >> $GITHUB_OUTPUT
+          echo "API URL: ${API_URL}"
+
+      - name: Wait for service to stabilize
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        run: sleep 10
+
+      - name: Health check - API
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        id: health-api
+        run: |
+          API_URL="${{ steps.api-url.outputs.url }}"
+          echo "Checking API health at: ${API_URL}/health"
+
+          for i in {1..15}; do
+            RESPONSE=$(curl -s -w "\n%{http_code}" "${API_URL}/health" 2>&1 || echo "curl failed")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | head -n-1)
+
+            echo "Attempt $i: HTTP $HTTP_CODE"
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]; then
+              echo "API responded: $BODY"
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "API health check passed ✅"
+                echo "status=success" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
+
+            echo "Retrying in 10s... ($i/15)"
+            sleep 10
+          done
+
+          echo "API health check failed ❌"
+          echo "status=failed" >> $GITHUB_OUTPUT
+          exit 1
+
+      - name: Deployment summary
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        run: |
+          echo "## 🚀 Backend API Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Environment: ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Region: ${{ env.GCP_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Image Tag: ${{ steps.image-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | URL | Health |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Backend API** | ${{ steps.api-url.outputs.url }} | ${{ steps.health-api.outputs.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View in GCP Console](https://console.cloud.google.com/run?project=${{ secrets.GCP_PROJECT_ID }})" >> $GITHUB_STEP_SUMMARY
