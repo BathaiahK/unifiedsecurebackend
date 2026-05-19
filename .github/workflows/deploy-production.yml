@@ -255,8 +255,8 @@ jobs:
                 echo "✅ API health check passed (HTTP 200)"
                 echo "status=success" >> $GITHUB_OUTPUT
                 exit 0
-              elif [ "$HTTP_CODE" = "503" ]; then
-                echo "⚠️ API returned 503 (service starting up)"
+              elif [ "$HTTP_CODE" = "503" ] || [ "$HTTP_CODE" = "500" ]; then
+                echo "⚠️ API returned HTTP $HTTP_CODE (service may be starting up or initializing)"
               else
                 echo "⚠️ Unexpected HTTP code: $HTTP_CODE"
               fi
@@ -274,6 +274,27 @@ jobs:
           echo "❌ API health check failed after 15 attempts (150 seconds)"
           echo "status=failed" >> $GITHUB_OUTPUT
           exit 1
+
+      - name: Fetch Cloud Run logs on health check failure
+        if: steps.gcp-check.outputs.has-wif == 'true' && failure()
+        run: |
+          echo "=== Cloud Run Application Logs ==="
+          echo "Fetching recent logs from Cloud Run service..."
+          echo ""
+
+          gcloud run services describe unifiedsecure-backend-api \
+            --region ${{ env.GCP_REGION }} \
+            --format='value(status.conditions[0].message)' 2>/dev/null || true
+
+          echo ""
+          echo "=== Last 100 lines of service logs ==="
+          gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=unifiedsecure-backend-api" \
+            --region ${{ env.GCP_REGION }} \
+            --limit 100 \
+            --format 'table(timestamp, jsonPayload.message, severity)' 2>/dev/null || {
+            echo "Could not fetch logs. Check Cloud Run console for details:"
+            echo "https://console.cloud.google.com/run/detail/${{ env.GCP_REGION }}/unifiedsecure-backend-api?project=${{ secrets.GCP_PROJECT_ID }}"
+          }
 
       - name: Deployment summary
         if: steps.gcp-check.outputs.has-wif == 'true'
