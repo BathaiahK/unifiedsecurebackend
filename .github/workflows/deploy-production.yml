@@ -154,12 +154,32 @@ jobs:
         if: steps.gcp-check.outputs.has-wif == 'true'
         id: api-url
         run: |
+          echo "=== Waiting for service to be ready ==="
           sleep 5
+
+          echo "=== Retrieving service URL ==="
           API_URL=$(gcloud run services describe unifiedsecure-backend-api \
             --region ${{ env.GCP_REGION }} \
-            --format 'value(status.url)')
+            --format 'value(status.url)' 2>&1)
+
+          DESCRIBE_EXIT=$?
+          echo "gcloud describe exit code: $DESCRIBE_EXIT"
+          echo "Raw API_URL output: '${API_URL}'"
+          echo "API_URL length: ${#API_URL}"
+
+          if [ -z "$API_URL" ]; then
+            echo "❌ ERROR: Failed to retrieve service URL"
+            echo "Service might not be ready or deployment failed"
+            echo ""
+            echo "=== Service status ==="
+            gcloud run services describe unifiedsecure-backend-api \
+              --region ${{ env.GCP_REGION }} \
+              --format='json' 2>&1 || echo "Failed to describe service"
+            exit 1
+          fi
+
+          echo "✅ Service URL retrieved: ${API_URL}"
           echo "url=${API_URL}" >> $GITHUB_OUTPUT
-          echo "API URL: ${API_URL}"
 
       - name: Wait for service to stabilize
         if: steps.gcp-check.outputs.has-wif == 'true'
@@ -170,33 +190,52 @@ jobs:
         id: health-api
         run: |
           API_URL="${{ steps.api-url.outputs.url }}"
-          echo "Checking API health at: ${API_URL}/health"
+
+          echo "=== Health Check Configuration ==="
+          echo "API_URL: '${API_URL}'"
+          echo "API_URL length: ${#API_URL}"
+
+          if [ -z "$API_URL" ]; then
+            echo "❌ ERROR: API_URL is empty!"
+            echo "Cannot perform health check"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          HEALTH_ENDPOINT="${API_URL}/health"
+          echo "Checking: ${HEALTH_ENDPOINT}"
+          echo ""
 
           for i in {1..15}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health" 2>&1)
+            echo "Attempt $i/15..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${HEALTH_ENDPOINT}" 2>&1)
             CURL_EXIT=$?
 
-            echo "Attempt $i: HTTP $HTTP_CODE (curl exit: $CURL_EXIT)"
+            echo "  HTTP Code: $HTTP_CODE"
+            echo "  Curl Exit: $CURL_EXIT"
 
-            if [ "$CURL_EXIT" -eq 0 ] && ([ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]); then
+            if [ "$CURL_EXIT" -eq 0 ]; then
               if [ "$HTTP_CODE" = "200" ]; then
-                echo "✅ API health check passed"
+                echo "✅ API health check passed (HTTP 200)"
                 echo "status=success" >> $GITHUB_OUTPUT
                 exit 0
+              elif [ "$HTTP_CODE" = "503" ]; then
+                echo "⚠️ API returned 503 (service starting up)"
               else
-                echo "⚠️ API returned 503 (starting up), retrying..."
+                echo "⚠️ Unexpected HTTP code: $HTTP_CODE"
               fi
             else
-              echo "⚠️ Health check failed (curl exit: $CURL_EXIT, HTTP: $HTTP_CODE)"
+              echo "⚠️ Curl failed (exit: $CURL_EXIT)"
             fi
 
             if [ "$i" -lt 15 ]; then
-              echo "Retrying in 10s... ($i/15)"
+              echo "  Waiting 10s before retry..."
               sleep 10
             fi
           done
 
-          echo "❌ API health check failed after 15 attempts"
+          echo ""
+          echo "❌ API health check failed after 15 attempts (150 seconds)"
           echo "status=failed" >> $GITHUB_OUTPUT
           exit 1
 
