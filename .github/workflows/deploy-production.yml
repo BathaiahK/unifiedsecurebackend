@@ -90,6 +90,28 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "Using image tag: ${TAG}"
 
+      - name: Verify Docker image exists in Artifact Registry
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${{ steps.image-tag.outputs.tag }}"
+          echo "=== Verifying Docker Image ==="
+          echo "Image: ${IMAGE}"
+
+          echo ""
+          echo "=== Checking image in Artifact Registry ==="
+          if gcloud container images describe "${IMAGE}" --format='value(image_summary.fully_qualified_digest)'; then
+            echo "✅ Image found in Artifact Registry"
+          else
+            echo "❌ ERROR: Image not found: ${IMAGE}"
+            echo ""
+            echo "=== Available images ==="
+            gcloud container images list --repository="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure" || echo "No images found"
+            echo ""
+            echo "=== List all tags for backend-api ==="
+            gcloud container images list-tags "${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api" --limit=10 || echo "Failed to list tags"
+            exit 1
+          fi
+
       - name: Inspect current Cloud Run service
         if: steps.gcp-check.outputs.has-wif == 'true'
         run: |
@@ -157,27 +179,41 @@ jobs:
           echo "=== Waiting for service to be ready ==="
           sleep 5
 
-          echo "=== Retrieving service URL ==="
+          echo "=== Retrieving service URL (attempt 1: status.url) ==="
           API_URL=$(gcloud run services describe unifiedsecure-backend-api \
             --region ${{ env.GCP_REGION }} \
             --format 'value(status.url)' 2>&1)
 
-          DESCRIBE_EXIT=$?
-          echo "gcloud describe exit code: $DESCRIBE_EXIT"
-          echo "Raw API_URL output: '${API_URL}'"
-          echo "API_URL length: ${#API_URL}"
+          echo "Result: '${API_URL}' (length: ${#API_URL})"
+
+          # If status.url is empty, try to extract from annotations
+          if [ -z "$API_URL" ]; then
+            echo ""
+            echo "=== Attempt 2: Extract from annotations ==="
+            ANNOTATION=$(gcloud run services describe unifiedsecure-backend-api \
+              --region ${{ env.GCP_REGION }} \
+              --format 'value(metadata.annotations."run.googleapis.com/urls")' 2>&1)
+            echo "Annotation found: '${ANNOTATION}'"
+
+            # Parse JSON array from annotation: ["https://..."]
+            if [[ $ANNOTATION =~ \"(https://[^\"]+)\" ]]; then
+              API_URL="${BASH_REMATCH[1]}"
+              echo "Extracted URL: '${API_URL}'"
+            fi
+          fi
 
           if [ -z "$API_URL" ]; then
-            echo "❌ ERROR: Failed to retrieve service URL"
-            echo "Service might not be ready or deployment failed"
             echo ""
-            echo "=== Service status ==="
+            echo "❌ ERROR: Could not retrieve service URL from either status.url or annotations"
+            echo ""
+            echo "=== Full Service JSON for debugging ==="
             gcloud run services describe unifiedsecure-backend-api \
               --region ${{ env.GCP_REGION }} \
-              --format='json' 2>&1 || echo "Failed to describe service"
+              --format='json' 2>&1
             exit 1
           fi
 
+          echo ""
           echo "✅ Service URL retrieved: ${API_URL}"
           echo "url=${API_URL}" >> $GITHUB_OUTPUT
 
