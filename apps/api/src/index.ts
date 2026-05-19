@@ -37,19 +37,21 @@ await app.register(cors, {
         },
 });
 
+// Health check endpoint (not versioned - for Cloud Run liveness probes)
 app.get('/health', async () => ({
   status: 'ok',
   ts: new Date().toISOString(),
   adapters: getConfiguredScanners(scannerConfigs),
 }));
 
-await app.register(findingsRoutes);
-await app.register(scansRoutes);
-await app.register(sbomRoutes);
-await app.register(statsRoutes);
-await app.register(assetsRoutes);
-await app.register(reportsRoutes);
-await app.register(projectsRoutes);
+// Register all API routes under /api/v1 for versioning
+await app.register(findingsRoutes, { prefix: '/api/v1' });
+await app.register(scansRoutes, { prefix: '/api/v1' });
+await app.register(sbomRoutes, { prefix: '/api/v1' });
+await app.register(statsRoutes, { prefix: '/api/v1' });
+await app.register(assetsRoutes, { prefix: '/api/v1' });
+await app.register(reportsRoutes, { prefix: '/api/v1' });
+await app.register(projectsRoutes, { prefix: '/api/v1' });
 
 // Sonatype: simulator when credentials absent, real OSS Index client when present
 const snAdapter = new SonatypeAdapter(
