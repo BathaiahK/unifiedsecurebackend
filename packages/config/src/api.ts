@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const ApiConfigSchema = z.object({
-  databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
+  databaseUrl: z.string().min(1).optional(),
   port: z.coerce.number().int().min(1).max(65535).default(4000),
   host: z.string().default('0.0.0.0'),
   logLevel: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
