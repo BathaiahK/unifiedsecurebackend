@@ -90,11 +90,33 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "Using image tag: ${TAG}"
 
+      - name: Inspect current Cloud Run service
+        if: steps.gcp-check.outputs.has-wif == 'true'
+        run: |
+          echo "=== Current Service Configuration ==="
+          gcloud run services describe unifiedsecure-backend-api \
+            --region ${{ env.GCP_REGION }} \
+            --format='value(spec.template.spec.containers[0].env)' 2>/dev/null || echo "Service does not exist yet (first deployment)"
+
+          echo ""
+          echo "=== Deployment Plan ==="
+          echo "Image: ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${{ steps.image-tag.outputs.tag }}"
+          echo "Environment Variables to set:"
+          echo "  - DATABASE_URL: (secret, length: ${#DATABASE_URL})"
+          echo "  - NODE_ENV: production"
+          echo "  - LOG_LEVEL: warn"
+          echo "  - ENVIRONMENT: production"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Deploy API to Cloud Run
         if: steps.gcp-check.outputs.has-wif == 'true'
         run: |
           set -e
-          echo "Deploying Backend API to Cloud Run..."
+          echo "=== Attempting Deployment ==="
+          echo "Command: gcloud run deploy unifiedsecure-backend-api"
+
+          # Try deployment with detailed output
           gcloud run deploy unifiedsecure-backend-api \
             --image ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${{ steps.image-tag.outputs.tag }} \
             --platform managed \
@@ -108,8 +130,25 @@ jobs:
             --min-instances 1 \
             --ingress all \
             --allow-unauthenticated \
-            --revision-suffix "prod-$(date +%s)"
+            --revision-suffix "prod-$(date +%s)" \
+            --verbose 2>&1 | tee deployment.log || {
+              echo ""
+              echo "=== Deployment Failed - Investigating ==="
+              echo "Exit code: $?"
+              echo ""
+              echo "Last 50 lines of deployment log:"
+              tail -50 deployment.log
+              exit 1
+            }
+
+          echo ""
           echo "✅ API deployment successful"
+
+          echo ""
+          echo "=== Verifying Deployment ==="
+          gcloud run services describe unifiedsecure-backend-api \
+            --region ${{ env.GCP_REGION }} \
+            --format='value(spec.template.spec.containers[0].env)'
 
       - name: Get API service URL
         if: steps.gcp-check.outputs.has-wif == 'true'
