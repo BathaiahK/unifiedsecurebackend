@@ -105,11 +105,43 @@ jobs:
       - name: Push API image to Artifact Registry
         if: steps.gcp-check.outputs.has-wif == 'true'
         run: |
+          set -e
           TIMESTAMP=${{ steps.docker-build.outputs.timestamp }}
+          LATEST_IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest"
+          TIMESTAMP_IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${TIMESTAMP}"
 
-          docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:latest
-          docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/unifiedsecure/backend-api:${TIMESTAMP}
-          echo "✅ Docker image pushed to Artifact Registry"
+          echo "=== Pushing Docker Images ==="
+          echo "1. Pushing ${LATEST_IMAGE}"
+          docker push "${LATEST_IMAGE}" || {
+            echo "❌ Failed to push latest tag"
+            exit 1
+          }
+          echo "✅ Latest tag pushed"
+
+          echo ""
+          echo "2. Pushing ${TIMESTAMP_IMAGE}"
+          docker push "${TIMESTAMP_IMAGE}" || {
+            echo "❌ Failed to push timestamp tag"
+            exit 1
+          }
+          echo "✅ Timestamp tag pushed"
+
+          echo ""
+          echo "=== Verifying Images in Artifact Registry ==="
+          echo "Checking latest tag:"
+          gcloud container images describe "${LATEST_IMAGE}" --format='value(image_summary.fully_qualified_digest)' || {
+            echo "❌ Latest tag not found in registry!"
+            exit 1
+          }
+
+          echo ""
+          echo "Checking timestamp tag:"
+          gcloud container images describe "${TIMESTAMP_IMAGE}" --format='value(image_summary.fully_qualified_digest)' || {
+            echo "⚠️ Warning: Timestamp tag not found (will retry on next push)"
+          }
+
+          echo ""
+          echo "✅ Docker images successfully pushed to Artifact Registry"
 
       - name: Log image details
         if: steps.gcp-check.outputs.has-wif == 'true'
