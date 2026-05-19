@@ -67,9 +67,13 @@ if (snAdapter.isSimulated) {
 }
 
 // SCA: local detection engine backed by OSV vulnerability database
-const scaAdapter = new ScaAdapter({ mongoUrl: apiConfig.databaseUrl });
-registerAdapter(scaAdapter);
-app.log.info('SCA adapter registered (local OSV detection engine)');
+if (apiConfig.databaseUrl) {
+  const scaAdapter = new ScaAdapter({ mongoUrl: apiConfig.databaseUrl });
+  registerAdapter(scaAdapter);
+  app.log.info('SCA adapter registered (local OSV detection engine)');
+} else {
+  app.log.warn('SCA adapter skipped — DATABASE_URL not configured');
+}
 
 // Git History: local secret scanner — no external tool required
 const gitHistoryAdapter = new GitHistoryAdapter();
@@ -134,16 +138,20 @@ try {
 // Kick off vuln-db sync in the background after server is listening
 // (disabled for development to avoid memory issues; enable in production)
 if (apiConfig.nodeEnv === 'production') {
-  setImmediate(async () => {
-    try {
-      app.log.info('[vuln-db] Starting background sync from OSV...');
-      const store = await getVulnStore(apiConfig.databaseUrl);
-      await syncAllEcosystems(store);
-      app.log.info('[vuln-db] Background sync complete');
-    } catch (err) {
-      app.log.error({ err }, '[vuln-db] Background sync failed');
-    }
-  });
+  if (apiConfig.databaseUrl) {
+    setImmediate(async () => {
+      try {
+        app.log.info('[vuln-db] Starting background sync from OSV...');
+        const store = await getVulnStore(apiConfig.databaseUrl);
+        await syncAllEcosystems(store);
+        app.log.info('[vuln-db] Background sync complete');
+      } catch (err) {
+        app.log.error({ err }, '[vuln-db] Background sync failed');
+      }
+    });
+  } else {
+    app.log.warn('[vuln-db] Background sync skipped — DATABASE_URL not configured');
+  }
 } else {
   app.log.info('[vuln-db] Disabled in development mode (enable in production)');
 }
