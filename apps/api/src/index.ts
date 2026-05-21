@@ -38,6 +38,7 @@ await app.register(cors, {
 });
 
 // Health check endpoint (not versioned - for Cloud Run liveness probes)
+// Listens on 8080 as required by Cloud Run
 app.get('/health', async () => ({
   status: 'ok',
   ts: new Date().toISOString(),
