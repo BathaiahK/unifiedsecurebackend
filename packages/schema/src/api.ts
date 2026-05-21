@@ -40,7 +40,7 @@ export const StatsResponseSchema = z.object({
   securityScore: z.number().int(),
   criticalDelta: z.number().int(),
   highDelta: z.number().int(),
-  mediumDelta: z.string(),
+  mediumDelta: z.number().int(),
 });
 export type StatsResponse = z.infer<typeof StatsResponseSchema>;
 
