@@ -16,6 +16,7 @@ export type FindingsQuery = z.infer<typeof FindingsQuerySchema>;
 export const UpdateFindingStatusSchema = z.object({
   status: FindingStatusSchema,
 });
+export type UpdateFindingStatus = z.infer<typeof UpdateFindingStatusSchema>;
 
 export const TriggerScanSchema = z.object({
   tool: ToolSchema,
@@ -31,6 +32,7 @@ export const GenerateReportSchema = z.object({
   format: z.enum(['PDF', 'CSV']),
   asset: z.string().optional(),
 });
+export type GenerateReport = z.infer<typeof GenerateReportSchema>;
 
 export const StatsResponseSchema = z.object({
   total: z.number().int(),
