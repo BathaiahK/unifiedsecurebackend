@@ -144,7 +144,7 @@ jobs:
             --platform managed \
             --region ${{ env.GCP_REGION }} \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }} \
-            --set-env-vars DATABASE_URL="${{ secrets.DATABASE_URL }}",NODE_ENV=production,LOG_LEVEL=warn,ENVIRONMENT=production \
+            --set-env-vars DATABASE_URL="${{ secrets.DATABASE_URL }}",NODE_ENV=production,LOG_LEVEL=warn,ENVIRONMENT=production,CORS_ORIGIN=* \
             --memory 512Mi \
             --cpu 1 \
             --timeout 60 \
