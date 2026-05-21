@@ -11,8 +11,8 @@ COPY apps/api ./apps/api
 # Install pnpm and dependencies
 RUN npm install -g pnpm && CI=true pnpm install --frozen-lockfile
 
-# Generate Prisma client and build the API
-RUN CI=true pnpm db:generate && pnpm --filter api build
+# Generate Prisma client and build all packages (API + shared packages it depends on)
+RUN CI=true pnpm db:generate && pnpm -r build
 
 # Runtime stage
 FROM node:20-alpine
@@ -30,8 +30,9 @@ COPY apps/api ./apps/api
 # Install production dependencies only
 RUN CI=true pnpm install --prod --frozen-lockfile
 
-# Copy built app from builder
+# Copy built apps and packages from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages ./packages
 
 # Expose port
 EXPOSE 4000
