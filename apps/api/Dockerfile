@@ -22,15 +22,11 @@ WORKDIR /app
 # Install pnpm for production
 RUN npm install -g pnpm
 
-# Copy workspace files
+# Copy workspace configuration
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages ./packages
-COPY apps/api ./apps/api
 
-# Install production dependencies only
-RUN CI=true pnpm install --prod --frozen-lockfile
-
-# Copy built apps and packages from builder
+# Copy built artifacts and node_modules from builder
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages ./packages
 
