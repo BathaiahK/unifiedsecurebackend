@@ -38,5 +38,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Start the API
-# Environment variables are set via Cloud Run deployment, not from .env file
+# Environment variables are set via ECS/Fargate deployment at runtime
+# (via AWS Secrets Manager and environment variables, not from .env file)
 ENTRYPOINT ["node", "apps/api/dist/index.js"]
