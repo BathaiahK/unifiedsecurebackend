@@ -18,6 +18,10 @@ RUN CI=true pnpm install --frozen-lockfile
 RUN pnpm db:generate
 RUN pnpm -r build
 
+# Remove nested node_modules that interfere with module resolution
+# Keep only root /app/node_modules for workspace symlinks
+RUN find /app -path '*/node_modules' -not -path '/app/node_modules' -not -path '/app/node_modules/*' -type d -exec rm -rf {} + 2>/dev/null || true
+
 # Expose port
 EXPOSE 4000
 
