@@ -23,7 +23,7 @@ RUN pnpm db:generate
 RUN pnpm -r build
 
 # Remove dev dependencies to slim the image
-RUN pnpm prune --prod
+RUN CI=true pnpm prune --prod
 
 # Expose port
 EXPOSE 4000
