@@ -1,31 +1,39 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY packages ./packages
+COPY apps/api ./apps/api
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm && CI=true pnpm install --frozen-lockfile
+
+# Generate Prisma client and build all packages
+RUN CI=true pnpm db:generate && pnpm -r build
+
+# Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install required system dependencies for Prisma
-RUN apk add --no-cache openssl libc6-compat
+# Install pnpm and system dependencies
+RUN npm install -g pnpm && apk add --no-cache openssl libc6-compat
 
-# Install pnpm
-RUN npm install -g pnpm
+# Copy workspace configuration
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY packages ./packages
 
-# Copy everything
-COPY . .
+# Copy built dist from builder
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Install all dependencies
-RUN CI=true pnpm install
-
-# Generate Prisma client
-RUN pnpm db:generate
-
-# Build the project
-RUN pnpm -r build
+# Install production dependencies
+RUN CI=true pnpm install --prod --frozen-lockfile
 
 # Expose port
 EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:4000/health || exit 1
-
-# Run API
-CMD ["node", "apps/api/dist/index.js"]
+# Start the API
+ENTRYPOINT ["node", "apps/api/dist/index.js"]
