@@ -21,4 +21,5 @@ RUN pnpm db:generate
 # This avoids all module resolution issues with built code
 EXPOSE 4000
 
-CMD ["pnpm", "exec", "tsx", "apps/api/src/index.ts"]
+# Use tsx directly from node_modules to run TypeScript source
+CMD ["/app/node_modules/.pnpm/node_modules/.bin/tsx", "apps/api/src/index.ts"]
