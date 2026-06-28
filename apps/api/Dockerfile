@@ -19,18 +19,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm and system dependencies
-RUN npm install -g pnpm && apk add --no-cache openssl libc6-compat
+# Install system dependencies only
+RUN apk add --no-cache openssl libc6-compat
 
 # Copy workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages ./packages
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy built dist from builder
+# Copy built artifacts and ALL node_modules from builder
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-
-# Install production dependencies
-RUN CI=true pnpm install --prod --frozen-lockfile
+COPY --from=builder /app/packages ./packages
 
 # Expose port
 EXPOSE 4000
