@@ -1,34 +1,29 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache openssl libc6-compat
+
+# Install pnpm
+RUN npm install -g pnpm
 
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm && CI=true pnpm install --frozen-lockfile
+# Install dependencies (pnpm preserves symlinks better in single stage)
+RUN CI=true pnpm install --frozen-lockfile
 
-# Generate Prisma client and build all packages
-RUN CI=true pnpm db:generate && pnpm -r build
+# Generate Prisma client
+RUN pnpm db:generate
 
-# Runtime stage
-FROM node:20-alpine
+# Build the project
+RUN pnpm -r build
 
-WORKDIR /app
-
-# Install system dependencies only
-RUN apk add --no-cache openssl libc6-compat
-
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy built artifacts and ALL node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages ./packages
+# Remove dev dependencies to slim the image
+RUN pnpm prune --prod
 
 # Expose port
 EXPOSE 4000
