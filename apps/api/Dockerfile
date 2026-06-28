@@ -8,25 +8,18 @@ RUN apk add --no-cache openssl libc6-compat
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages ./packages
-COPY apps/api ./apps/api
+# Copy everything
+COPY . .
 
-# Install dependencies (pnpm preserves symlinks better in single stage)
+# Install dependencies
 RUN CI=true pnpm install --frozen-lockfile
 
-# Generate Prisma client
+# Generate Prisma client and build
 RUN pnpm db:generate
-
-# Build the project
 RUN pnpm -r build
-
-# Rebuild symlinks for runtime (pnpm creates them during install)
-RUN pnpm install --frozen-lockfile --offline 2>/dev/null || true
 
 # Expose port
 EXPOSE 4000
 
-# Start the API
-ENTRYPOINT ["node", "apps/api/dist/index.js"]
+# Use pnpm to run the API (preserves workspace resolution)
+ENTRYPOINT ["pnpm", "--filter", "@usp/api", "start"]
