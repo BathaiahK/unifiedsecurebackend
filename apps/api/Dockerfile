@@ -11,20 +11,19 @@ RUN npm install -g pnpm
 # Copy entire workspace
 COPY . .
 
-# Install all dependencies (including dev dependencies for tsx)
+# Install all dependencies
 RUN CI=true pnpm install --frozen-lockfile
 
-# CRITICAL: Remove nested node_modules that block workspace resolution
-# pnpm creates nested node_modules in each package, but they interfere with
-# finding workspace packages in /app/node_modules. Keep ONLY root /app/node_modules.
-RUN find /app -type d -name 'node_modules' ! -path '/app/node_modules' ! -path '/app/node_modules/*' -exec rm -rf {} + 2>/dev/null || true
-
-# Generate Prisma client
+# Generate Prisma client (needs nested node_modules)
 RUN pnpm db:generate
 
-# Run the API directly from source using tsx
-# This avoids all module resolution issues with built code
+# Expose port
 EXPOSE 4000
 
-# Use tsx directly from node_modules to run TypeScript source
+# Set NODE_PATH to prioritize workspace packages in root node_modules
+# This ensures @usp/config resolves from /app/node_modules not /app/apps/api/node_modules
+ENV NODE_PATH=/app/node_modules
+
+# Run from /app root with tsx to execute TypeScript source
+WORKDIR /app
 CMD ["/app/node_modules/.pnpm/node_modules/.bin/tsx", "apps/api/src/index.ts"]
