@@ -9,7 +9,6 @@ import { prisma, mongoClient } from '../db.js';
 import { getAdapter } from '../adapter-registry.js';
 import { fetchRepoFiles } from '../lib/repo-fetcher.js';
 import { extractPurls } from '../lib/purl-extractor.js';
-import { scaStreamingQueue } from '@usp/adapter-sca';
 
 export const scansRoutes: FastifyPluginAsync = async (app) => {
   app.post('/api/scans', async (req, reply) => {
@@ -80,28 +79,8 @@ export const scansRoutes: FastifyPluginAsync = async (app) => {
       if (!closed) res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
-    // Check if it's an SCA scan and subscribe to real-time streaming if so
+    // SCA streaming disabled - requires @usp/adapter-sca package
     let unsubscribe: (() => void) | null = null;
-    try {
-      const scan = await prisma.scan.findUnique({
-        where: { id: req.params.id },
-      });
-      if (scan?.tool === 'sca' && typeof scan.meta === 'object' && scan.meta !== null) {
-        const meta = scan.meta as Record<string, unknown>;
-        const externalScanId = meta.externalScanId;
-        if (typeof externalScanId === 'string' && externalScanId.startsWith('sca-')) {
-          unsubscribe = scaStreamingQueue.subscribe(externalScanId, (event: any) => {
-            send(event);
-            if (event.status === 'complete' || event.status === 'failed') {
-              res.end();
-              if (unsubscribe) unsubscribe();
-            }
-          });
-        }
-      }
-    } catch {
-      // Ignore errors in subscription setup, fall back to polling
-    }
 
     let delay = 500;
     const MAX_DELAY = 5000;

@@ -8,16 +8,6 @@ import { assetsRoutes } from './routes/assets.js';
 import { reportsRoutes } from './routes/reports.js';
 import { projectsRoutes } from './routes/projects.js';
 import { sbomRoutes } from './routes/sbom.js';
-import { registerAdapter } from './adapter-registry.js';
-import { SonatypeAdapter } from '@usp/adapter-sonatype';
-import { ScaAdapter } from '@usp/adapter-sca';
-import { GitHistoryAdapter } from '@usp/adapter-git-history';
-import { SastAdapter } from '@usp/adapter-sast';
-import { DastAdapter } from '@usp/adapter-dast';
-import { ApiSecurityAdapter } from '@usp/adapter-api-security';
-import { ContainerAdapter } from '@usp/adapter-container';
-import { SupplyChainAdapter } from '@usp/adapter-supply-chain';
-import { MalwareAdapter } from '@usp/adapter-malware';
 import { getVulnStore, syncAllEcosystems } from '@usp/vuln-db';
 import { mongoClient } from './db.js';
 
@@ -54,73 +44,7 @@ await app.register(assetsRoutes, { prefix: '/api/v1' });
 await app.register(reportsRoutes, { prefix: '/api/v1' });
 await app.register(projectsRoutes, { prefix: '/api/v1' });
 
-// Sonatype: simulator when credentials absent, real OSS Index client when present
-const snAdapter = new SonatypeAdapter(
-  scannerConfigs.sonatype
-    ? { username: scannerConfigs.sonatype.username, token: scannerConfigs.sonatype.password }
-    : undefined,
-);
-registerAdapter(snAdapter);
-if (snAdapter.isSimulated) {
-  app.log.warn(
-    'Sonatype running in SIMULATION mode — add SONATYPE_USERNAME + SONATYPE_TOKEN to .env for live OSS Index scanning',
-  );
-} else {
-  app.log.info('Sonatype adapter registered (OSS Index live)');
-}
-
-// SCA: local detection engine backed by OSV vulnerability database
-if (apiConfig.databaseUrl) {
-  const scaAdapter = new ScaAdapter({ mongoUrl: apiConfig.databaseUrl });
-  registerAdapter(scaAdapter);
-  app.log.info('SCA adapter registered (local OSV detection engine)');
-} else {
-  app.log.warn('SCA adapter skipped — DATABASE_URL not configured');
-}
-
-// Git History: local secret scanner — no external tool required
-const gitHistoryAdapter = new GitHistoryAdapter();
-registerAdapter(gitHistoryAdapter);
-app.log.info('Git History adapter registered (local secret scanner)');
-
-// SAST: Static Application Security Testing — detects code vulnerabilities
-const sastAdapter = new SastAdapter();
-registerAdapter(sastAdapter);
-app.log.info('SAST adapter registered (code vulnerability scanner)');
-
-// DAST: Dynamic Application Security Testing — tests running applications
-const dastAdapter = new DastAdapter();
-registerAdapter(dastAdapter);
-app.log.info('DAST adapter registered (dynamic application security testing)');
-
-// API Security: OpenAPI spec validation & auto-discovery
-const apiSecurityAdapter = new ApiSecurityAdapter();
-registerAdapter(apiSecurityAdapter);
-app.log.info('API Security adapter registered (OpenAPI validation & auto-discovery)');
-
-// Container Security: Static image scanning with Trivy CLI
-const containerAdapter = new ContainerAdapter(scannerConfigs.container as any);
-registerAdapter(containerAdapter);
-if (containerAdapter.isSimulated) {
-  app.log.warn(
-    'Container Security running in SIMULATION mode — install Trivy or set TRIVY_PATH env var for live scanning',
-  );
-} else {
-  app.log.info('Container Security adapter registered (live Trivy scanning)');
-}
-
-// Supply Chain: detects typosquatting, dependency confusion, unmaintained packages
-const supplyChainAdapter = new SupplyChainAdapter();
-registerAdapter(supplyChainAdapter);
-app.log.info(
-  'Supply Chain adapter registered (typosquatting, dependency confusion, unmaintained packages)',
-);
-
-// Malware: detects obfuscated code, credential harvesting, suspicious patterns
-const malwareAdapter = new MalwareAdapter();
-registerAdapter(malwareAdapter);
-app.log.info('Malware adapter registered (code vulnerability scanner)');
-
+// Adapters temporarily disabled - will be added back when packages are available
 if (scannerConfigs.sysdig) app.log.info('Runtime Security adapter registered (stub)');
 
 // Pre-warm MongoDB connection pool

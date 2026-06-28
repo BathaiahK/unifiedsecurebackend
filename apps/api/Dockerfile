@@ -1,43 +1,31 @@
-# Build stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages ./packages
-COPY apps/api ./apps/api
-
-# Install pnpm and dependencies
-RUN npm install -g pnpm && CI=true pnpm install --frozen-lockfile
-
-# Generate Prisma client and build all packages (API + shared packages it depends on)
-RUN CI=true pnpm db:generate && pnpm -r build
-
-# Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm for production
+# Install required system dependencies for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
+# Install pnpm
 RUN npm install -g pnpm
 
-# Copy workspace configuration
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy everything
+COPY . .
 
-# Copy built artifacts and node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages ./packages
+# Install all dependencies
+RUN CI=true pnpm install
+
+# Generate Prisma client
+RUN pnpm db:generate
+
+# Build the project
+RUN pnpm -r build
 
 # Expose port
 EXPOSE 4000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:4000/health || exit 1
 
-# Start the API
-# Environment variables are set via ECS/Fargate deployment at runtime
-# (via AWS Secrets Manager and environment variables, not from .env file)
-ENTRYPOINT ["node", "apps/api/dist/index.js"]
+# Run API
+CMD ["node", "apps/api/dist/index.js"]
