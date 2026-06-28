@@ -14,6 +14,11 @@ COPY . .
 # Install all dependencies (including dev dependencies for tsx)
 RUN CI=true pnpm install --frozen-lockfile
 
+# CRITICAL: Remove nested node_modules that block workspace resolution
+# pnpm creates nested node_modules in each package, but they interfere with
+# finding workspace packages in /app/node_modules. Keep ONLY root /app/node_modules.
+RUN find /app -type d -name 'node_modules' ! -path '/app/node_modules' ! -path '/app/node_modules/*' -exec rm -rf {} + 2>/dev/null || true
+
 # Generate Prisma client
 RUN pnpm db:generate
 
