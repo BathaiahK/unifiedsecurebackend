@@ -21,4 +21,4 @@ RUN pnpm db:generate
 # This avoids all module resolution issues with built code
 EXPOSE 4000
 
-CMD ["pnpm", "exec", "tsx", "--env-file=.env", "apps/api/src/index.ts"]
+CMD ["pnpm", "exec", "tsx", "apps/api/src/index.ts"]
