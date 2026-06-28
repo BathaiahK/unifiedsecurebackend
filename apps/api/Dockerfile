@@ -20,10 +20,8 @@ RUN pnpm db:generate
 # Expose port
 EXPOSE 4000
 
-# Set NODE_PATH to prioritize workspace packages in root node_modules
-# This ensures @usp/config resolves from /app/node_modules not /app/apps/api/node_modules
-ENV NODE_PATH=/app/node_modules
-
 # Run from /app root with tsx to execute TypeScript source
+# Use NODE_OPTIONS to enable better module resolution for workspace packages
 WORKDIR /app
+ENV NODE_OPTIONS=--experimental-specifier-resolution=node
 CMD ["/app/node_modules/.pnpm/node_modules/.bin/tsx", "apps/api/src/index.ts"]
