@@ -21,5 +21,6 @@ RUN pnpm -r build
 # Expose port
 EXPOSE 4000
 
-# Use pnpm to run the API (preserves workspace resolution)
-ENTRYPOINT ["pnpm", "--filter", "@usp/api", "start"]
+# Run the API from the workspace root to resolve workspace packages
+WORKDIR /app
+CMD ["node", "apps/api/dist/index.js"]
