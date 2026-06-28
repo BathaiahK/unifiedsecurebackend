@@ -22,6 +22,9 @@ RUN pnpm db:generate
 # Build the project
 RUN pnpm -r build
 
+# Rebuild symlinks for runtime (pnpm creates them during install)
+RUN pnpm install --frozen-lockfile --offline 2>/dev/null || true
+
 # Expose port
 EXPOSE 4000
 
